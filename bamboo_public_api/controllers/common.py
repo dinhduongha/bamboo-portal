@@ -93,3 +93,20 @@ def page_meta(total, limit, page):
 def image_url(model, rec_id, field='image_512'):
     """Public image ref (binary stays out of JSON; the browser fetches /web/image)."""
     return '/web/image/%s/%s/%s' % (model, rec_id, field)
+
+
+def cover_image_url(cover_properties):
+    """Extract the `background-image: url('…')` from a record's `cover_properties`
+    JSON (event.event / blog.post covers). Returns the relative path or ''."""
+    if not cover_properties:
+        return ''
+    try:
+        bg = json.loads(cover_properties).get('background-image', '')
+    except (ValueError, TypeError):
+        return ''
+    # bg looks like: url('/website_blog/static/src/img/cover_7.jpg')
+    start = bg.find("url(")
+    if start == -1:
+        return ''
+    inner = bg[start + 4:bg.find(")", start)].strip("'\" ")
+    return inner
