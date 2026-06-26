@@ -11,12 +11,22 @@ class IrHttp(models.AbstractModel):
 
     @classmethod
     def _bearer_uid(cls):
-        """Decode the `Authorization: Bearer <jwt>` header to a uid, or None."""
+        """Decode the `Authorization: Bearer <jwt>` header to a uid, or None.
+
+        Returns None on a missing/expired/invalid token instead of raising, so
+        the auth methods fall back to `super()` (the standard session-cookie
+        path). This is what makes "send both" robust: a stale/expired Bearer
+        alongside a valid session must not hard-fail the request (which would
+        bounce the user to /login in a loop).
+        """
         token = request.httprequest.headers.get('Authorization')
         if token and token.startswith('Bearer '):
-            secret = request.env['ir.config_parameter'].sudo().get_param('database.secret')
-            payload = jwt.decode(token[7:], secret, algorithms=["HS256"])
-            return payload.get('uid')
+            try:
+                secret = request.env['ir.config_parameter'].sudo().get_param('database.secret')
+                payload = jwt.decode(token[7:], secret, algorithms=["HS256"])
+                return payload.get('uid')
+            except Exception:
+                return None
         return None
 
     @classmethod
