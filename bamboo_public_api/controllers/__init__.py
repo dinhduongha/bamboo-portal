@@ -9,3 +9,4 @@ from . import contact
 from . import portal_auth
 from . import cart
 from . import checkout
+from . import portal
