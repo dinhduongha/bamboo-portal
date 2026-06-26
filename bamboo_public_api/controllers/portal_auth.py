@@ -8,10 +8,23 @@ Signup creates a `portal` (share=True) user.
 """
 import time
 
-from odoo import http
+from odoo import http, release
 from odoo.http import request
 
 from .common import API_ROOT, err, ok
+
+
+def _authenticate(login, password):
+    """Authenticate against the session, papering over the version difference in
+    Session.authenticate: Odoo 18 takes (db_name, credential); 19 takes
+    (env, credential). Mirrors bamboo_token_authentication's guard so the same
+    code runs unchanged on both the 18.0 and 19.0 branches."""
+    credential = {'login': login, 'password': password, 'type': 'password'}
+    if release.version_info[0] >= 19:
+        import odoo
+        auth_env = odoo.api.Environment(request.env.cr, None, {})
+        return request.session.authenticate(auth_env, credential)
+    return request.session.authenticate(request.db, credential)
 
 
 def _issue_token(uid):
@@ -68,9 +81,7 @@ class BambooPublicAuth(http.Controller):
         if not login or not password:
             return err('Login and password are required', 422)
         try:
-            request.session.authenticate(
-                request.env, {'login': login, 'password': password, 'type': 'password'},
-            )
+            _authenticate(login, password)
         except Exception as exc:
             return err('Invalid credentials: %s' % exc, 401)
         user = _current_user()
@@ -108,9 +119,7 @@ class BambooPublicAuth(http.Controller):
 
         # Log the new user in immediately (session cookie).
         try:
-            request.session.authenticate(
-                request.env, {'login': email, 'password': password, 'type': 'password'},
-            )
+            _authenticate(email, password)
         except Exception:
             return err('Account created but auto-login failed; please log in', 200)
         user = _current_user()
