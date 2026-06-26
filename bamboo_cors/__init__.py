@@ -90,4 +90,31 @@ def _cors_call(self, environ, start_response):
 
 http.Application.__call__ = _cors_call
 
+
+# --- cross-origin db selection for plain <img>/asset requests ----------------
+# On a multi-db server the db is chosen from the session cookie, the
+# X-Odoo-Database header, or monodb. A cross-origin `<img src="/web/image/...">`
+# can carry none of those (no cookie, no custom header) → "no database selected"
+# 404. Let such requests name the db via a `?db=` query param (gated by the same
+# db_filter as the header path, so no new exposure). The Bamboo client appends it
+# to image URLs. Header/cookie paths are untouched.
+from odoo.http import Request, db_filter
+
+_original_get_session_and_dbname = Request._get_session_and_dbname
+
+
+def _get_session_and_dbname_with_query(self):
+    session, dbname = _original_get_session_and_dbname(self)
+    if not dbname:
+        qdb = self.httprequest.args.get('db')
+        host = self.httprequest.environ.get('HTTP_HOST')
+        if qdb and db_filter([qdb], host=host):
+            session.can_save = False  # stateless, like the header path
+            session.db = qdb
+            dbname = qdb
+    return session, dbname
+
+
+Request._get_session_and_dbname = _get_session_and_dbname_with_query
+
 _logger.info("bamboo_cors: CORS headers enabled for all routes (dev mode)")
