@@ -95,6 +95,18 @@ def image_url(model, rec_id, field='image_512'):
     return '/web/image/%s/%s/%s' % (model, rec_id, field)
 
 
+def read_body():
+    """Parse a POST body as dict — JSON when the content-type says so, else the
+    form params. Public POST endpoints (contact, job apply) accept either."""
+    ctype = request.httprequest.content_type or ''
+    if 'application/json' in ctype:
+        try:
+            return json.loads(request.httprequest.get_data() or b'{}')
+        except (ValueError, TypeError):
+            return {}
+    return dict(request.params)
+
+
 def cover_image_url(cover_properties):
     """Extract the `background-image: url('…')` from a record's `cover_properties`
     JSON (event.event / blog.post covers). Returns the relative path or ''."""

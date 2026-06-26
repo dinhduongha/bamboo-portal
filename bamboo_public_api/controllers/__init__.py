@@ -3,3 +3,6 @@ from . import main
 from . import shop
 from . import event
 from . import blog
+from . import forum
+from . import job
+from . import contact
