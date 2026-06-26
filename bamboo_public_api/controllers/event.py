@@ -70,3 +70,31 @@ class BambooPublicEvent(http.Controller):
         if not ev.exists() or not ev.website_published:
             return err('Event not found', 404)
         return ok(data=_event_detail(ev))
+
+    @http.route(API_ROOT + '/events/<int:event_id>/register', type='http', auth='user', methods=['POST'], csrf=False)
+    @requires_app('event')
+    def event_register(self, event_id, **kw):
+        from .common import read_body
+        ev = request.env['event.event'].sudo().browse(event_id)
+        if not ev.exists() or not ev.website_published:
+            return err('Event not found', 404)
+        body = read_body()
+        partner = request.env.user.partner_id
+        vals = {
+            'event_id': ev.id,
+            'partner_id': partner.id,
+            'name': (body.get('name') or '').strip() or partner.name,
+            'email': (body.get('email') or '').strip() or partner.email or '',
+            'phone': body.get('phone') or partner.phone or '',
+        }
+        ticket_id = body.get('ticket_id')
+        if ticket_id:
+            ticket = ev.event_ticket_ids.filtered(lambda t: t.id == int(ticket_id))
+            if not ticket:
+                return err('Invalid ticket', 422)
+            vals['event_ticket_id'] = ticket.id
+        try:
+            reg = request.env['event.registration'].sudo().create(vals)
+        except Exception as exc:
+            return err('Could not register: %s' % exc, 400)
+        return ok(data={'registration_id': reg.id, 'state': reg.state}, status=201)

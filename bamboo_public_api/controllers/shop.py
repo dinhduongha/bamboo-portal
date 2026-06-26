@@ -17,7 +17,9 @@ def _currency_name():
 
 
 def _product_card(tmpl):
-    """Compact product for list views."""
+    """Compact product for list views. `variant_id` is the default/only
+    product.product (what the cart needs); `variant_count` tells the UI whether
+    to add directly or send the shopper to the detail page to choose."""
     return {
         'id': tmpl.id,
         'name': tmpl.name,
@@ -26,6 +28,8 @@ def _product_card(tmpl):
         'description_sale': tmpl.description_sale or '',
         'category_ids': tmpl.public_categ_ids.ids,
         'image_url': image_url('product.template', tmpl.id),
+        'variant_id': tmpl.product_variant_id.id,
+        'variant_count': tmpl.product_variant_count,
     }
 
 

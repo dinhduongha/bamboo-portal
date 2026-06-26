@@ -78,3 +78,46 @@ class BambooPublicForum(http.Controller):
         if not post.exists() or post.parent_id or post.state != 'active':
             return err('Question not found', 404)
         return ok(data=_question_detail(post))
+
+    @http.route(API_ROOT + '/forums/<int:forum_id>/questions', type='http', auth='user', methods=['POST'], csrf=False)
+    @requires_app('forum')
+    def ask_question(self, forum_id, **kw):
+        from .common import read_body
+        forum = request.env['forum.forum'].sudo().browse(forum_id)
+        if not forum.exists():
+            return err('Forum not found', 404)
+        body = read_body()
+        title = (body.get('title') or body.get('name') or '').strip()
+        content = (body.get('content') or '').strip()
+        if not title or not content:
+            return err('Title and content are required', 422)
+        # Run as the user so forum karma rules apply (don't bypass with sudo).
+        try:
+            post = request.env['forum.post'].with_user(request.env.user).create({
+                'forum_id': forum.id,
+                'name': title,
+                'content': content,
+            })
+        except Exception as exc:
+            return err(str(exc), 403)
+        return ok(data={'question_id': post.id}, status=201)
+
+    @http.route(API_ROOT + '/questions/<int:question_id>/answers', type='http', auth='user', methods=['POST'], csrf=False)
+    @requires_app('forum')
+    def answer_question(self, question_id, **kw):
+        from .common import read_body
+        question = request.env['forum.post'].sudo().browse(question_id)
+        if not question.exists() or question.parent_id:
+            return err('Question not found', 404)
+        content = (read_body().get('content') or '').strip()
+        if not content:
+            return err('Content is required', 422)
+        try:
+            answer = request.env['forum.post'].with_user(request.env.user).create({
+                'forum_id': question.forum_id.id,
+                'parent_id': question.id,
+                'content': content,
+            })
+        except Exception as exc:
+            return err(str(exc), 403)
+        return ok(data={'answer_id': answer.id}, status=201)
