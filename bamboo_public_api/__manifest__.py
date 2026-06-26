@@ -17,7 +17,7 @@ installed apps light up (see GET /bamboo/public/v1/meta).
     'author': "Bamboo",
     'website': "https://github.com/dinhduongha/bamboo-react",
     'category': 'Website',
-    'version': '19.0.1.0.0',
+    'version': '18.0.1.0.0',
     # CORS is handled globally by bamboo_cors (reflects Origin + credentials), so
     # depend on it to guarantee the patch is loaded. website_sale/website_event/…
     # are intentionally NOT hard deps — routes guard on presence at runtime.
