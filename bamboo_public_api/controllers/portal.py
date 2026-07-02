@@ -214,8 +214,13 @@ class BambooPublicPortal(http.Controller):
             _scoped_domain() + [('id', '=', move_id)], limit=1)
         if not move:
             return err('Invoice not found', 404)
-        # Online payment goes through the payment framework — wired in P5.
-        return err('Online invoice payment is not available yet (coming in P5)', 501)
+        # Start a payment transaction for this invoice via the shared payment flow.
+        from .common import read_body
+        from .payment import start_transaction, _tx_payload
+        tx, error = start_transaction(read_body().get('provider_id'), 'invoice', move.id)
+        if error:
+            return err(error[0], error[1])
+        return ok(data=_tx_payload(tx), status=201)
 
     # ---- subscriptions -----------------------------------------------------
 

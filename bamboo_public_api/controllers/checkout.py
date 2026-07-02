@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Checkout — turn the draft cart into a placed `sale.order`.
+"""Checkout — bind the cart to the buyer and capture the shipping address.
 
-Requires a logged-in user (auth='user'). Binds the cart to the user's partner,
-optionally writes a shipping address, then confirms. Payment is P5 — for now the
-order is confirmed directly and returned. The cart is located by the same
-`X-Cart-Token` as cart.py.
+Requires a logged-in user (auth='user'). Binds the cart to the user's partner and
+optionally writes a shipping address. A FREE cart (total <= 0) is confirmed right
+here; a payable cart is left draft and the response asks the client to run the
+payment step (see payment.py), which confirms the order once the transaction is
+done. The cart is located by the same `X-Cart-Token` as cart.py.
 """
 from odoo import http
 from odoo.http import request
@@ -48,10 +49,20 @@ class BambooPublicCheckout(http.Controller):
         # Bind the cart to the buyer (it may have been an anonymous cart).
         order.write({'partner_id': request.env.user.partner_id.id})
         _apply_address(order, read_body())
+
+        # A payable cart is confirmed by the payment step (payment.py) once the
+        # transaction is done; only a free cart is placed directly here.
+        if order.amount_total > 0:
+            data = _cart_dict(order)
+            data['name'] = order.name
+            data['requires_payment'] = True
+            return ok(data=data, status=200)
+
         try:
             order.action_confirm()
         except Exception as exc:
             return err('Could not place order: %s' % exc, 400)
         data = _cart_dict(order)
         data['name'] = order.name
+        data['requires_payment'] = False
         return ok(data=data, status=201)
