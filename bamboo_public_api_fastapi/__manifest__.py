@@ -2,7 +2,7 @@
 {
     'name': 'Bamboo Public API - FastAPI',
     'summary': 'Optional FastAPI implementation of the Bamboo public API (Odoo 19 only)',
-    'version': '1.0.0',
+    'version': '19.0.1.0.0',
     'license': 'LGPL-3',
     'author': 'Bamboo',
     'category': 'Website',
