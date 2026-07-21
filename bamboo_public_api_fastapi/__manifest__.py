@@ -2,7 +2,11 @@
 {
     'name': 'Bamboo Public API - FastAPI',
     'summary': 'Optional FastAPI implementation of the Bamboo public API (Odoo 19 only)',
-    'version': '19.0.1.0.0',
+    # Seriesless on purpose: adapt_version() yields 19.0.x on v19 and 18.0.x on v18,
+    # so the manifest stays load-valid in BOTH worktrees. Odoo 18 rejects an explicit
+    # 19.0.x string outright. The real v18 guard is the missing `fastapi` dependency,
+    # which makes this module uninstallable on 18 (never breaks module loading).
+    'version': '1.0.0',
     'license': 'LGPL-3',
     'author': 'Bamboo',
     'category': 'Website',
