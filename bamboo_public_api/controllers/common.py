@@ -7,10 +7,17 @@ bamboo_cors, so controllers here NEVER set CORS headers or handle OPTIONS.
 """
 import functools
 import json
+import os
 
+from odoo import release
 from odoo.http import request
+from odoo.tools import config as odoo_config
 
 API_ROOT = '/bamboo/public/v1'
+# Root the optional FastAPI implementation mounts under (v19 only, bridge module
+# bamboo_public_api_fastapi). Distinct from API_ROOT so it never collides with the
+# controller routes — the toggle just decides which one the client calls.
+FASTAPI_ROOT = '/bamboo/fastapi/v1'
 
 # app key -> the Odoo module that must be installed for that app's routes to work.
 # Drives GET /meta and the per-route presence guard. website_* are soft deps.
@@ -21,6 +28,7 @@ APP_MODULES = {
     'forum': 'website_forum',
     'job': 'website_hr_recruitment',
     'contact': 'website_crm',
+    'course': 'website_slides',
     'payment': 'payment',
 }
 
@@ -39,6 +47,36 @@ def ok(data=None, meta=None, status=200):
 
 def err(message, status=400):
     return _resp({'success': False, 'data': None, 'error': message, 'meta': {}}, status)
+
+
+def _config(key, default=None):
+    """Resolve a setting: odoo.conf → ir.config_parameter → env var → default.
+    (Same resolver shape as abp_auth/laoid_auth.) The env tier reads KEY uppercased."""
+    value = odoo_config.get(key)
+    if value not in (None, ''):
+        return value
+    try:
+        if request and request.env:
+            param = request.env['ir.config_parameter'].sudo().get_param(key)
+            if param not in (None, ''):
+                return param
+    except Exception:
+        pass
+    env_value = os.environ.get(key.upper())
+    if env_value not in (None, ''):
+        return env_value
+    return default
+
+
+def fastapi_mode_active():
+    """True when the API should be served by FastAPI instead of the controllers.
+    Requires: config `bamboo_public_api_mode == 'fastapi'` AND Odoo >= 19 AND the
+    `fastapi` module installed. Defaults to controller mode (fail-safe)."""
+    if release.version_info[0] < 19:
+        return False
+    if _config('bamboo_public_api_mode', 'controller') != 'fastapi':
+        return False
+    return module_installed('fastapi')
 
 
 def module_installed(name):
