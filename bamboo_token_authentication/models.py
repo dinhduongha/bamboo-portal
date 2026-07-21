@@ -15,9 +15,8 @@ class IrHttp(models.AbstractModel):
 
         Returns None on a missing/expired/invalid token instead of raising, so
         the auth methods fall back to `super()` (the standard session-cookie
-        path). This is what makes "send both" robust: a stale/expired Bearer
-        alongside a valid session must not hard-fail the request (which would
-        bounce the user to /login in a loop).
+        path). This is what makes "send both" robust: a stale Bearer alongside a
+        valid session cookie must not break the request.
         """
         token = request.httprequest.headers.get('Authorization')
         if token and token.startswith('Bearer '):
