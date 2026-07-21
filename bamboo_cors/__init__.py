@@ -102,13 +102,20 @@ from odoo.http import Request, db_filter
 
 _original_get_session_and_dbname = Request._get_session_and_dbname
 
+# The ?db= stateless db-selection exists ONLY for cross-origin asset/image reads
+# (a bare <img>/<link> carries no cookie and no X-Odoo-Database header). It must NOT
+# touch interactive routes (/web/login, /web, /odoo, /web/database/*): forcing
+# session.can_save=False there drops the session cookie and breaks multi-db web login.
+_STATELESS_DB_PATHS = ('/web/image', '/web/content', '/web/assets')
+
 
 def _get_session_and_dbname_with_query(self):
     session, dbname = _original_get_session_and_dbname(self)
     if not dbname:
         qdb = self.httprequest.args.get('db')
         host = self.httprequest.environ.get('HTTP_HOST')
-        if qdb and db_filter([qdb], host=host):
+        path = self.httprequest.path or ''
+        if qdb and path.startswith(_STATELESS_DB_PATHS) and db_filter([qdb], host=host):
             session.can_save = False  # stateless, like the header path
             session.db = qdb
             dbname = qdb
