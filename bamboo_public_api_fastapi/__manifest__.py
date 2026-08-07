@@ -2,11 +2,11 @@
 {
     'name': 'Bamboo Public API - FastAPI',
     'summary': 'Optional FastAPI implementation of the Bamboo public API',
-    # This is the v18.0 copy (bamboo-portal branch 18.0, mounted only on the v18
-    # stack). It targets OCA fastapi 18.0 (18.0.1.3.4, from addons-oca/rest-framework).
-    # The v19.0 copy lives on branch 19.0 (odoo19/addons) at version 19.0.x — kept as
-    # a separate copy. Never merge this version line across branches.
-    'version': '18.0.1.0.0',
+    # This is the v19.0 copy (bamboo-portal branch 19.0, mounted only on the v19
+    # stack). It targets OCA fastapi 19.0 (19.0.1.0.2, from odoo19/addons-oca).
+    # The v18.0 copy lives on branch 18.0 at version 18.0.x — kept as a separate
+    # copy. Never merge this version line across branches.
+    'version': '19.0.1.0.0',
     'license': 'LGPL-3',
     'author': 'dinhduongha@gmail.com',
     'website': "https://github.com/dinhduongha/bamboo-portal",

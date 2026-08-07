@@ -25,6 +25,19 @@ class Uuid(fields.Char):
     def _column_type(self):
         return ('uuid', 'uuid')
 
+    def setup(self, model):
+        super().setup(model)
+        # A model whose table is a SQL view (`_auto = False`) has no column to
+        # hold this. Worse, Odoo builds such a view by enumerating the model's
+        # stored fields, so leaving it stored makes the view SELECT a column
+        # that is not in its source table — on Odoo 19 `hr.employee.public`
+        # selects from `hr_version` and the CREATE VIEW fails outright.
+        #
+        # Nothing is lost: a record a client cannot create is a record it never
+        # queues offline, so there is no create to make idempotent.
+        if not model._auto:
+            self.store = False
+
     def update_db_column(self, model, column):
         # Char's own override converts varchar columns to a different length;
         # it does not understand this one. Fall back to the generic behaviour,

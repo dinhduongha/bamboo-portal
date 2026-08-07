@@ -25,7 +25,7 @@ without one (the web UI, other addons, imports).
     'author': "dinhduongha@gmail.com",
     'website': "https://github.com/dinhduongha/bamboo-portal",
     'category': 'Technical',
-    'version': '18.0.1.0',
+    'version': '19.0.1.0',
     'depends': ['base'],
     'license': 'LGPL-3',
     # Nothing declarative: the marker model is abstract (so it needs no ACL,

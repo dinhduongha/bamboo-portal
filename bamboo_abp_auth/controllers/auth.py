@@ -7,7 +7,7 @@ import secrets
 import time
 import urllib.parse
 
-from odoo import http
+from odoo import http, release
 from odoo.exceptions import UserError
 from odoo.http import request
 from odoo.tools import config
@@ -451,10 +451,16 @@ class AbpAuthController(http.Controller):
             'abp_sub': claims.get('sub'),
         }
         try:
-            # Odoo 18 Session.authenticate(dbname, credential) — first arg is the DB
-            # NAME (used for Registry(dbname)), not an Environment.
-            db_name = request.session.db or request.env.cr.dbname
-            request.session.authenticate(db_name, credential)
+            # Session.authenticate's first argument changed: Odoo 18 takes the DB
+            # NAME (for Registry(dbname)), 19 takes an Environment. Same guard as
+            # bamboo_public_api's portal_auth, so one file serves both branches.
+            if release.version_info[0] >= 19:
+                import odoo
+                auth_env = odoo.api.Environment(request.env.cr, None, {})
+                request.session.authenticate(auth_env, credential)
+            else:
+                db_name = request.session.db or request.env.cr.dbname
+                request.session.authenticate(db_name, credential)
         except Exception as exc:
             _logger.error('bamboo_abp_auth: Session authentication failed: %s', exc)
             return request.redirect('/web/login?oauth_error=3')

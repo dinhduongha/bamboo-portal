@@ -216,7 +216,10 @@ class IrHttp(models.AbstractModel):
             return
         groups = env['res.groups'].sudo().search([('role_code', 'in', roles)])
         if groups:
-            user.sudo().write({'groups_id': [(6, 0, groups.ids)]})
+            # res.users.groups_id was renamed to group_ids in Odoo 19; both
+            # branches of this module share one file, so ask the model.
+            field = 'group_ids' if 'group_ids' in user._fields else 'groups_id'
+            user.sudo().write({field: [(6, 0, groups.ids)]})
 
     @classmethod
     def _sync_user_organizations(cls, env, user, ou_ids, company):
