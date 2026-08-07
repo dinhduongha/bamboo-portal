@@ -17,7 +17,7 @@ from .common import API_ROOT, err, ok
 def _authenticate(login, password):
     """Authenticate against the session, papering over the version difference in
     Session.authenticate: Odoo 18 takes (db_name, credential); 19 takes
-    (env, credential). Mirrors bamboo_token_authentication's guard so the same
+    (env, credential). Mirrors bamboo_token_auth's guard so the same
     code runs unchanged on both the 18.0 and 19.0 branches."""
     credential = {'login': login, 'password': password, 'type': 'password'}
     if release.version_info[0] >= 19:
@@ -28,11 +28,11 @@ def _authenticate(login, password):
 
 
 def _issue_token(uid):
-    """Mint a JWT compatible with bamboo_token_authentication's Bearer auth
+    """Mint a JWT compatible with bamboo_token_auth's Bearer auth
     (its ir.http override decodes `database.secret`/HS256 on public+user routes).
     Returns '' when that module isn't installed (caller falls back to session)."""
     try:
-        from odoo.addons.bamboo_token_authentication import jwt_min as jwt
+        from odoo.addons.bamboo_token_auth import jwt_min as jwt
     except ImportError:
         return ''
     secret = request.env['ir.config_parameter'].sudo().get_param('database.secret')

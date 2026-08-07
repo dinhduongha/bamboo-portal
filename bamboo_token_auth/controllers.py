@@ -10,6 +10,16 @@ def make_error(message):
     return dict(success=False, error=message)
 
 
+# Every method an Odoo route can declare, matching bamboo_cors so the two never
+# advertise a different set on the same server.
+_ALLOW_METHODS = 'GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD'
+
+_ALLOW_HEADERS = (
+    'origin, x-requested-with, x-csrftoken, content-type, accept, '
+    'x-openerp-session-id, authorization, range, x-odoo-database'
+)
+
+
 def _apply_cors(response):
     """Set credentialed CORS headers by **reflecting the request Origin**.
 
@@ -18,15 +28,19 @@ def _apply_cors(response):
     Origin. This intentionally accepts any localhost port (and file://, the
     Tauri/native origin, and the deployed domain) instead of a hardcoded
     `localhost:5173` — matching the global behaviour of `bamboo_cors`.
+
+    Header names are lowercase to match what bamboo_cors emits. That is cosmetic
+    on its own — `_inject_future_response` merges with `headers.extend()`, so
+    spelling does not stop a duplicate; bamboo_cors strips and re-appends all
+    four of these at the WSGI layer, which is what leaves one of each. These
+    values are what a client sees when bamboo_cors is not installed.
     """
     origin = request.httprequest.headers.get('Origin', '')
     if origin:
-        response.headers['Access-Control-Allow-Origin'] = origin
-    response.headers['Access-Control-Allow-Credentials'] = 'true'
-    response.headers['Access-Control-Allow-Headers'] = (
-        'origin, x-csrftoken, content-type, accept, x-openerp-session-id, authorization'
-    )
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, OPTIONS, DELETE, PATCH'
+        response.headers['access-control-allow-origin'] = origin
+    response.headers['access-control-allow-credentials'] = 'true'
+    response.headers['access-control-allow-headers'] = _ALLOW_HEADERS
+    response.headers['access-control-allow-methods'] = _ALLOW_METHODS
     return response
 
 
