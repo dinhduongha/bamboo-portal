@@ -1,5 +1,6 @@
 from odoo import fields, models
 
+from ..routers.auth import auth_router
 from ..routers.blog import blog_router
 from ..routers.courses import courses_router
 from ..routers.health import health_router
@@ -16,8 +17,37 @@ class FastapiEndpoint(models.Model):
 
     def _get_fastapi_routers(self):
         if self.app == "bamboo_public":
-            return [meta_router, health_router, courses_router, blog_router]
+            return [
+                meta_router, health_router, courses_router, blog_router,
+                auth_router,
+            ]
         return super()._get_fastapi_routers()
+
+    def _get_app_dependencies_overrides(self):
+        """Let the Bearer token decide who the app answers as.
+
+        `odoo_env` is replaced wholesale rather than wrapped: every existing
+        router already depends on it, so one override makes the whole app
+        identity-aware instead of each route opting in and the ones nobody
+        remembered staying anonymous. See ../dependencies.py for why the token
+        never reaches the app on its own.
+        """
+        overrides = super()._get_app_dependencies_overrides()
+        if self.app != "bamboo_public":
+            return overrides
+
+        from odoo.addons.fastapi import dependencies as oca_deps
+
+        from .. import dependencies as bamboo_deps
+
+        overrides.update({
+            oca_deps.odoo_env: bamboo_deps.authenticated_odoo_env,
+            oca_deps.authenticated_partner_impl:
+                bamboo_deps.authenticated_partner_impl,
+            oca_deps.optionally_authenticated_partner_impl:
+                bamboo_deps.optionally_authenticated_partner_impl,
+        })
+        return overrides
 
 
 # Monkey-patch FastApiDispatcher so errors under the bamboo FastAPI root return

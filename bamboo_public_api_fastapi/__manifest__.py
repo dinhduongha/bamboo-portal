@@ -10,8 +10,9 @@
     'license': 'LGPL-3',
     'author': 'Bamboo',
     'category': 'Website',
-    # Bridge module: installed ONLY on Odoo 19 (needs the OCA `fastapi` module).
-    # v18 laoone never installs it, so bamboo_public_api stays dual-support.
+    # Bridge module: optional everywhere, needs the OCA `fastapi` module (which
+    # pulls in `endpoint_route_handler` itself, so it is not listed here).
+    # bamboo_public_api works without it — the controllers are the default mode.
     'depends': ['bamboo_public_api', 'fastapi'],
     'external_dependencies': {
         'python': ['fastapi', 'a2wsgi', 'pydantic'],

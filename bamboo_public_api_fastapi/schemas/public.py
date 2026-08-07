@@ -11,6 +11,16 @@ class HealthOut(BaseModel):
     db: Optional[str] = None
 
 
+# --- auth ------------------------------------------------------------------
+class MeOut(BaseModel):
+    uid: int
+    login: str
+    name: str
+    email: str = ""
+    partner_id: int
+    company: str
+
+
 # --- courses (website_slides) ---------------------------------------------
 class CourseOut(BaseModel):
     id: int
