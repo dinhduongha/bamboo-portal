@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import logging
+import os
 from odoo import http, api, release
 from odoo.http import request
+from odoo.tools import config
 import time
 from . import jwt_min as jwt
 
@@ -20,6 +22,39 @@ _ALLOW_HEADERS = (
 )
 
 
+def _load_allowed_origins():
+    """`bamboo_cors_allow_origins` from odoo.conf, else the environment, else '*'.
+
+    The same setting name bamboo_cors reads, resolved independently: one server
+    setting, and this module keeps working when bamboo_cors is not installed.
+    None means '*' — reflect whatever Origin was sent, the default.
+    """
+    raw = (config.get('bamboo_cors_allow_origins')
+           or os.environ.get('BAMBOO_CORS_ALLOW_ORIGINS')
+           or '*')
+    raw = str(raw).strip()
+    if raw == '*':
+        return None
+    return {o.strip().lower() for o in raw.split(',') if o.strip()}
+
+
+_ALLOWED_ORIGINS = _load_allowed_origins()
+
+
+def _origin_allowed(origin):
+    """Is this Origin on the server's allowlist? Matched case-insensitively.
+
+    This route needs its own check because it sets CORS headers itself: the
+    global patch only strips and rewrites them for origins it already allowed,
+    so a blocked origin would otherwise get a fully credentialed response from
+    the one route that hands out tokens.
+    """
+    if not origin:
+        return False
+    return (_ALLOWED_ORIGINS is None
+            or origin.strip().lower() in _ALLOWED_ORIGINS)
+
+
 def _apply_cors(response):
     """Set credentialed CORS headers by **reflecting the request Origin**.
 
@@ -36,8 +71,12 @@ def _apply_cors(response):
     values are what a client sees when bamboo_cors is not installed.
     """
     origin = request.httprequest.headers.get('Origin', '')
-    if origin:
-        response.headers['access-control-allow-origin'] = origin
+    if not _origin_allowed(origin):
+        # No headers at all, so the browser blocks the response. Emitting them
+        # for an origin the server rejects would make this route the hole in
+        # the allowlist, and it is the route that issues tokens.
+        return response
+    response.headers['access-control-allow-origin'] = origin
     response.headers['access-control-allow-credentials'] = 'true'
     response.headers['access-control-allow-headers'] = _ALLOW_HEADERS
     response.headers['access-control-allow-methods'] = _ALLOW_METHODS
