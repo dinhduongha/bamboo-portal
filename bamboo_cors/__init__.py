@@ -1,11 +1,48 @@
 import logging
+import os
 
 import werkzeug
 
 import odoo.http as http
 from odoo.http import Response, CORS_MAX_AGE
+from odoo.tools import config
 
 _logger = logging.getLogger(__name__)
+
+# Every method Odoo routes can declare, so a client is never blocked by the
+# preflight for using PUT/PATCH/DELETE on a custom controller.
+_ALLOW_METHODS = 'GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD'
+
+
+def _load_allowed_origins():
+    """`bamboo_cors_allow_origins` from odoo.conf, else the env, else '*'.
+
+    Resolved once at import: this module is loaded server-wide (so config is
+    already parsed) and patches `Application.__call__`, which runs before any
+    `env` exists — an ir.config_parameter lookup is impossible there, and would
+    cost a query per request anyway. Changing the value needs a restart.
+
+    Returns None for '*' — "reflect whatever Origin was sent", today's behaviour
+    and the default.
+    """
+    raw = (config.get('bamboo_cors_allow_origins')
+           or os.environ.get('BAMBOO_CORS_ALLOW_ORIGINS')
+           or '*')
+    raw = str(raw).strip()
+    if raw == '*':
+        return None
+    return {o.strip().lower() for o in raw.split(',') if o.strip()}
+
+
+_ALLOWED_ORIGINS = _load_allowed_origins()
+
+
+def _allowed(origin):
+    """Is this Origin allowed? Matched case-insensitively (scheme and host are
+    case-insensitive per RFC 3986, and browsers do not always normalise)."""
+    if not origin:
+        return False
+    return _ALLOWED_ORIGINS is None or origin.strip().lower() in _ALLOWED_ORIGINS
 
 _original_is_cors_preflight = http.is_cors_preflight
 
@@ -29,22 +66,24 @@ _FALLBACK_ALLOW_HEADERS = (
 
 def _cors_pre_dispatch(self, rule, args):
     origin = self.request.httprequest.headers.get('Origin')
-    if origin:
+    if _allowed(origin):
         set_header = self.request.future_response.headers.set
-        set_header('Access-Control-Allow-Origin', origin)
-        set_header('Access-Control-Allow-Credentials', 'true')
-        set_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        # The echoed origin is the raw header, never the lowercased copy used for
+        # matching: the browser compares it byte-for-byte with what it sent.
+        set_header('access-control-allow-origin', origin)
+        set_header('access-control-allow-credentials', 'true')
+        set_header('access-control-allow-methods', _ALLOW_METHODS)
         # Reflect whatever headers the client asks for (so custom headers like
         # X-Odoo-Database pass), falling back to a static list that includes it.
         requested = self.request.httprequest.headers.get(
             'Access-Control-Request-Headers'
         )
         set_header(
-            'Access-Control-Allow-Headers',
+            'access-control-allow-headers',
             requested or _FALLBACK_ALLOW_HEADERS,
         )
         if self.request.httprequest.method == 'OPTIONS':
-            set_header('Access-Control-Max-Age', CORS_MAX_AGE)
+            set_header('access-control-max-age', CORS_MAX_AGE)
             werkzeug.exceptions.abort(Response(status=204))
     return _original_pre_dispatch(self, rule, args)
 
@@ -58,31 +97,39 @@ def _cors_call(self, environ, start_response):
     origin = environ.get('HTTP_ORIGIN')
 
     if environ.get('REQUEST_METHOD') == 'OPTIONS':
-        if origin:
+        if _allowed(origin):
             requested = environ.get('HTTP_ACCESS_CONTROL_REQUEST_HEADERS')
             headers = [
-                ('Access-Control-Allow-Origin', origin),
-                ('Access-Control-Allow-Credentials', 'true'),
-                ('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'),
-                ('Access-Control-Allow-Headers',
+                ('access-control-allow-origin', origin),
+                ('access-control-allow-credentials', 'true'),
+                ('access-control-allow-methods', _ALLOW_METHODS),
+                ('access-control-allow-headers',
                  requested or _FALLBACK_ALLOW_HEADERS),
-                ('Access-Control-Max-Age', str(CORS_MAX_AGE)),
-                ('Content-Length', '0'),
+                ('access-control-max-age', str(CORS_MAX_AGE)),
+                ('content-length', '0'),
             ]
             start_response('204 NO CONTENT', headers)
             return []
         return _original_call(self, environ, start_response)
 
-    if not origin:
+    if not _allowed(origin):
         return _original_call(self, environ, start_response)
 
+    # Last word on the CORS headers, whoever else set them. `Request.
+    # _inject_future_response` merges with `headers.extend()`, so a controller
+    # that sets its own (bamboo_token_auth's sign_in does) would otherwise ship
+    # two copies of the same header with two different values.
+    requested = environ.get('HTTP_ACCESS_CONTROL_REQUEST_HEADERS')
+    _owned = {
+        'access-control-allow-origin': origin,
+        'access-control-allow-credentials': 'true',
+        'access-control-allow-methods': _ALLOW_METHODS,
+        'access-control-allow-headers': requested or _FALLBACK_ALLOW_HEADERS,
+    }
+
     def _start_response(status, headers, exc_info=None):
-        headers = [
-            (k, v) for k, v in headers
-            if k.lower() not in ('access-control-allow-origin', 'access-control-allow-credentials')
-        ]
-        headers.append(('Access-Control-Allow-Origin', origin))
-        headers.append(('Access-Control-Allow-Credentials', 'true'))
+        headers = [(k, v) for k, v in headers if k.lower() not in _owned]
+        headers.extend(_owned.items())
         return start_response(status, headers, exc_info)
 
     return _original_call(self, environ, _start_response)
@@ -124,4 +171,9 @@ def _get_session_and_dbname_with_query(self):
 
 Request._get_session_and_dbname = _get_session_and_dbname_with_query
 
-_logger.info("bamboo_cors: CORS headers enabled for all routes (dev mode)")
+_logger.info(
+    "bamboo_cors: CORS enabled on all routes, methods=[%s], origins=%s",
+    _ALLOW_METHODS,
+    "* (any Origin reflected)" if _ALLOWED_ORIGINS is None
+    else ", ".join(sorted(_ALLOWED_ORIGINS)),
+)
