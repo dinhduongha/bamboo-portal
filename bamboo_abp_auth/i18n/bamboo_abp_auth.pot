@@ -1,0 +1,102 @@
+# Translation of ABP Auth
+# Copyright (C) DinhDuongHa
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 18.0\n"
+"Report-Msgid-Bugs-To: \n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+msgid "ABP Auth"
+msgstr ""
+
+msgid "ABP Auth Provider"
+msgstr ""
+
+msgid "ABP Tenant → Company Mapping"
+msgstr ""
+
+msgid "ABP Role → Odoo Group Mapping"
+msgstr ""
+
+msgid "Organization Unit (ABP OU)"
+msgstr ""
+
+msgid "Branch / Region"
+msgstr ""
+
+msgid "Authority URL"
+msgstr ""
+
+msgid "Client ID"
+msgstr ""
+
+msgid "Client Secret"
+msgstr ""
+
+msgid "Scope"
+msgstr ""
+
+msgid "JWKS URI"
+msgstr ""
+
+msgid "ABP Tenant ID"
+msgstr ""
+
+msgid "ABP Role"
+msgstr ""
+
+msgid "Odoo Group"
+msgstr ""
+
+msgid "ABP OU ID"
+msgstr ""
+
+msgid "SSO Subject (sub)"
+msgstr ""
+
+msgid "SSO Provider"
+msgstr ""
+
+msgid "Organizations"
+msgstr ""
+
+msgid "Branch Name"
+msgstr ""
+
+msgid "Code"
+msgstr ""
+
+msgid "Parent Branch"
+msgstr ""
+
+msgid "Sub-branches"
+msgstr ""
+
+msgid "Complete Name"
+msgstr ""
+
+msgid "Auth Providers"
+msgstr ""
+
+msgid "Tenant Mappings"
+msgstr ""
+
+msgid "Role Mappings"
+msgstr ""
+
+msgid "Authentication"
+msgstr ""
+
+msgid "SSO / ABP"
+msgstr ""
+
+msgid "SSO Identity"
+msgstr ""
+
+msgid "Branches"
+msgstr ""

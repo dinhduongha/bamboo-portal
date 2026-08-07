@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_res_users_form_bamboo_abp_auth" model="ir.ui.view">
+        <field name="name">res.users.form.bamboo_abp_auth</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='access_rights']" position="after">
+                <page string="SSO / ABP" name="erp_sso">
+                    <group>
+                        <group string="SSO Identity">
+                            <field name="sso_sub" readonly="1"/>
+                            <field name="tenant_id" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_res_company_form_bamboo_abp_auth" model="ir.ui.view">
+        <field name="name">res.company.form.bamboo_abp_auth</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="tenant_uuid" readonly="1"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_res_groups_form_bamboo_abp_auth" model="ir.ui.view">
+        <field name="name">res.groups.form.bamboo_abp_auth</field>
+        <field name="model">res.groups</field>
+        <field name="inherit_id" ref="base.view_groups_form"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="role_code"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

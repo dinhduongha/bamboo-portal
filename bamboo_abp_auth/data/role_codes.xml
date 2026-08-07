@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Default ABP role -> Odoo group mapping (base groups only, so bamboo_abp_auth stays
+  standalone). Each group's `role_code` equals the ABP JWT "role" claim value
+  that should grant it. Add deployment-specific groups via data/role_codes_tsc.xml
+  (see that file).
+-->
+<odoo>
+    <record id="base.group_system" model="res.groups">
+        <field name="role_code">superadmin</field>
+    </record>
+    <record id="base.group_erp_manager" model="res.groups">
+        <field name="role_code">admin</field>
+    </record>
+    <record id="base.group_user" model="res.groups">
+        <field name="role_code">user</field>
+    </record>
+</odoo>
