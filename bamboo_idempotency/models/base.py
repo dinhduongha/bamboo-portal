@@ -32,6 +32,50 @@ def _uuidv7_available(cr):
     return _UUIDV7_AVAILABLE
 
 
+#: Databases whose field xmlids have been protected in this process.
+_XMLIDS_PROTECTED = set()
+
+
+def _protect_field_xmlids(cr):
+    """Mark our per-model field xmlids `noupdate`, or `-u` deletes the columns.
+
+    The field is declared once on the abstract `base` model, but Odoo reflects
+    it as one `ir.model.fields` record per model, each with its own xmlid. At
+    the end of a load, `ir.model.data._process_end` deletes every non-noupdate
+    xmlid belonging to an updated module that was not re-created during that
+    run — and `-u bamboo_idempotency` only re-initialises part of the registry,
+    so the rest look like records the module dropped. Deleting an
+    `ir.model.fields` record drops its column, taking every stored key with it.
+
+    Measured before this: `-u bamboo_idempotency` on a dev database took 408
+    columns down to 87, with 418 `Deleting …bamboo_uuid` lines, and no
+    subsequent `-u` put them back. That is silent data loss on the most routine
+    operation there is.
+
+    `_process_end`'s own query exempts `noupdate` rows, so one UPDATE is the
+    whole fix. It covers every owning module, not just this one: models
+    introduced by a module installed later have their xmlid attributed to that
+    module (fastapi, endpoint_route_handler and auth_oauth each own a few), and
+    those rows are just as purgeable.
+    """
+    if cr.dbname in _XMLIDS_PROTECTED:
+        return
+    cr.execute(
+        r"""
+        UPDATE ir_model_data SET noupdate = true
+         WHERE model = 'ir.model.fields'
+           AND name LIKE 'field\_%\_\_bamboo\_uuid'
+           AND COALESCE(noupdate, false) = false
+        """
+    )
+    if cr.rowcount:
+        _logger.info(
+            "bamboo_idempotency: protected %s bamboo_uuid field xmlids from "
+            "the end-of-load purge.", cr.rowcount,
+        )
+    _XMLIDS_PROTECTED.add(cr.dbname)
+
+
 class Base(models.AbstractModel):
     """Adds the client-supplied dedup key to every model.
 
@@ -154,6 +198,9 @@ class Base(models.AbstractModel):
           `ir.attachment` that is an outage, not a migration.
         """
         res = super()._auto_init()
+        # Once per database per process, and before `_process_end` runs at the
+        # end of this load — which is the only window in which it helps.
+        _protect_field_xmlids(self.env.cr)
         if not self._auto or self._abstract or self._transient:
             return res
         if 'bamboo_uuid' not in self._fields:
