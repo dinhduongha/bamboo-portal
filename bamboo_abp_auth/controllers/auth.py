@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import secrets
+import time
 import urllib.parse
 
 from odoo import http
@@ -153,6 +154,87 @@ class AbpOidc:
     @classmethod
     def is_configured(cls):
         return bool(cls.authority() and cls.client_id())
+
+    # ---- tokens this module issues itself ---------------------------------
+    #
+    # After an SSO round-trip the client should not have to keep presenting
+    # ABP's token: it expires on the AuthServer's schedule, it means a JWKS
+    # fetch on our side, and it ties every API call to the IdP being reachable.
+    # So `/api/v1/auth/callback` (POST) hands back a token of our own.
+    #
+    # `iss` is what separates the two flavours everywhere else in this module —
+    # ours are HS256 with this issuer, ABP's are RS256 with the AuthServer's.
+    # bamboo_token_auth's tokens carry no `iss` at all, so nothing collides.
+    SELF_ISSUER = 'bamboo_abp_auth'
+
+    @classmethod
+    def jwt_secret(cls, env=None):
+        """HMAC key for our own tokens: `openid_jwt_secret`, else database.secret.
+
+        The default shares Odoo's own secret, which is what makes this work with
+        no configuration. Set `openid_jwt_secret` to give SSO tokens a key of
+        their own — then revoking them does not mean rotating database.secret.
+
+        `env` is explicit so this is callable outside a request (tests, cron).
+        """
+        secret = _config('openid_jwt_secret')
+        if not secret:
+            env = env if env is not None else request.env
+            secret = env['ir.config_parameter'].sudo().get_param('database.secret')
+        if not secret:
+            raise UserError('No signing secret available (database.secret is empty).')
+        return secret
+
+    @classmethod
+    def jwt_ttl(cls):
+        """Lifetime of our tokens in seconds; `openid_jwt_ttl`, default 24h.
+
+        Short by default on purpose: the SSO round-trip that mints it is cheap
+        to repeat, and a long-lived bearer that outlives the IdP session is the
+        thing SSO was supposed to avoid.
+        """
+        try:
+            return int(_config('openid_jwt_ttl') or 86400)
+        except (TypeError, ValueError):
+            return 86400
+
+    @classmethod
+    def issue_token(cls, user, claims=None):
+        """Mint an HS256 JWT identifying `user`. Returns (token, expires_in)."""
+        import jwt
+
+        claims = claims or {}
+        now = int(time.time())
+        ttl = cls.jwt_ttl()
+        payload = {
+            'iss': cls.SELF_ISSUER,
+            'sub': str(user.id),
+            'uid': user.id,
+            'login': user.login,
+            'iat': now,
+            'exp': now + ttl,
+        }
+        # Kept for audit: which ABP identity this token was minted from.
+        if claims.get('sub'):
+            payload['abp_sub'] = claims['sub']
+        if claims.get('tenantid'):
+            payload['tenantid'] = claims['tenantid']
+        return jwt.encode(payload, cls.jwt_secret(user.env), algorithm='HS256'), ttl
+
+    @classmethod
+    def validate_self_token(cls, token, env=None):
+        """Verify one of our own tokens. Returns the claims dict or raises."""
+        import jwt
+
+        try:
+            return jwt.decode(
+                token, cls.jwt_secret(env), algorithms=['HS256'],
+                issuer=cls.SELF_ISSUER, options={'verify_exp': True},
+            )
+        except jwt.ExpiredSignatureError:
+            raise UserError('Token has expired.')
+        except jwt.InvalidTokenError as exc:
+            raise UserError('Invalid token: %s' % exc)
 
     @classmethod
     def validate_token(cls, token):
@@ -378,6 +460,100 @@ class AbpAuthController(http.Controller):
             return request.redirect('/web/login?oauth_error=3')
 
         return request.redirect(redirect_url, 303)
+
+    @http.route('/api/v1/auth/callback', type='http', auth='public',
+                methods=['POST', 'OPTIONS'], csrf=False)
+    def callback_post(self, **kwargs):
+        """Exchange an ABP identity for one of ours, and hand back our own JWT.
+
+        Two ways in, whichever the client already has:
+
+        * ``code`` (+ ``code_verifier``, ``redirect_uri``) — the client did the
+          /connect/authorize redirect itself and holds an authorization code.
+        * ``token`` — the client already holds an ABP id_token/access_token.
+
+        Either way the token is verified against the AuthServer, the Odoo user
+        is provisioned exactly as on the browser callback, and the response
+        carries a token this module issued. From then on the client presents
+        ours: no JWKS fetch per request, no expiry on the IdP's schedule, and
+        nothing breaks when the AuthServer is briefly unreachable.
+
+        This is the GET callback's sibling on the same path — that one is the
+        browser redirect and ends in a session cookie; this one is for a client
+        that wants a token back in the response body.
+
+        Body may be JSON, form-urlencoded or multipart: Odoo hands form fields
+        in as kwargs, and a JSON body is merged over them.
+        """
+        if request.httprequest.method == 'OPTIONS':
+            return _json_response({}, status=204)
+        if not AbpOidc.is_configured():
+            return _json_response(
+                {'success': False, 'error': 'No SSO provider configured'}, 503)
+
+        payload = dict(kwargs)
+        try:
+            raw = request.httprequest.get_data(as_text=True)
+            if raw:
+                payload.update(json.loads(raw))
+        except Exception:
+            pass
+
+        code = (payload.get('code') or payload.get('authorization_code') or '').strip()
+        abp_token = (payload.get('token') or payload.get('access_token')
+                     or payload.get('id_token') or '').strip()
+        if not code and not abp_token:
+            return _json_response(
+                {'success': False, 'error': 'Provide either "code" or "token".'}, 400)
+
+        token_data = {}
+        try:
+            if code:
+                redirect_uri = (payload.get('redirect_uri')
+                                or payload.get('redirectUri')
+                                or (_public_base() + '/api/v1/auth/callback'))
+                code_verifier = (payload.get('code_verifier')
+                                 or payload.get('codeVerifier') or '')
+                token_data = AbpOidc.exchange_code(code, code_verifier, redirect_uri)
+                abp_token = token_data.get('id_token') or token_data.get('access_token')
+                if not abp_token:
+                    return _json_response(
+                        {'success': False,
+                         'error': 'No token in provider response.'}, 502)
+
+            from odoo.addons.bamboo_abp_auth.models.ir_http import IrHttp
+            user, claims = IrHttp._validate_and_provision(abp_token)
+            access_token, expires_in = AbpOidc.issue_token(user, claims)
+        except Exception as exc:
+            _logger.error('bamboo_abp_auth: callback POST failed: %s', exc)
+            return _json_response({'success': False, 'error': str(exc)}, 401)
+
+        # The exchange and the provisioning both wrote; a client that got a
+        # token back must find the user there on its next request.
+        request.env.cr.commit()
+
+        data = {
+            'access_token': access_token,
+            'token_type': 'Bearer',
+            'expires_in': expires_in,
+            'uid': user.id,
+            'user': {
+                'id': user.id,
+                'login': user.login,
+                'name': user.name,
+                'email': user.email or '',
+            },
+        }
+        if token_data:
+            # The AuthServer's own tokens, for a client that still needs to talk
+            # to ABP directly (refresh, logout, its other APIs).
+            data['abp'] = {
+                'access_token': token_data.get('access_token', ''),
+                'refresh_token': token_data.get('refresh_token', ''),
+                'id_token': token_data.get('id_token', ''),
+                'expires_in': token_data.get('expires_in', 0),
+            }
+        return _json_response({'success': True, 'data': data})
 
     @http.route('/api/v1/auth/abp/token', type='http', auth='public',
                 methods=['POST', 'OPTIONS'], csrf=False)

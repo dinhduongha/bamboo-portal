@@ -47,19 +47,23 @@ class IrHttp(models.AbstractModel):
         """
         from odoo.addons.bamboo_abp_auth.controllers.auth import AbpOidc
 
-        if not AbpOidc.is_configured():
-            return False
         try:
             import jwt
         except ImportError:
             return False
         try:
-            if jwt.get_unverified_header(token).get('alg') != 'RS256':
-                return False  # bamboo_token_auth mints HS256
-            claims = jwt.decode(token, options={'verify_signature': False})
+            alg = jwt.get_unverified_header(token).get('alg')
+            iss = jwt.decode(token, options={'verify_signature': False}).get('iss')
         except Exception:
             return False  # not a JWT at all (opaque/reference token, garbage)
-        return AbpOidc.issued_here(claims.get('iss'))
+
+        if alg == 'HS256':
+            # One we minted at /api/v1/auth/callback. bamboo_token_auth's are
+            # HS256 too but carry no `iss`, so they are never claimed here.
+            return iss == AbpOidc.SELF_ISSUER
+        if alg == 'RS256':
+            return AbpOidc.is_configured() and AbpOidc.issued_here(iss)
+        return False
 
     @classmethod
     def _authenticate_bearer(cls, token):
@@ -80,6 +84,9 @@ class IrHttp(models.AbstractModel):
         from odoo.addons.bamboo_abp_auth.controllers.auth import AbpOidc
 
         env = request.env(user=1)  # SUPERUSER for lookup / provisioning
+
+        if cls._is_self_issued(token):
+            return cls._user_from_self_token(env, token), {}
 
         claims = AbpOidc.validate_token(token)
 
@@ -166,6 +173,41 @@ class IrHttp(models.AbstractModel):
             cls._sync_user_organizations(env, user, ou_ids, company)
 
         return user, claims
+
+    @classmethod
+    def _is_self_issued(cls, token):
+        """Cheap unverified check: does this token claim to be one of ours?"""
+        from odoo.addons.bamboo_abp_auth.controllers.auth import AbpOidc
+
+        try:
+            import jwt
+
+            claims = jwt.decode(token, options={'verify_signature': False})
+        except Exception:
+            return False
+        return claims.get('iss') == AbpOidc.SELF_ISSUER
+
+    @classmethod
+    def _user_from_self_token(cls, env, token):
+        """Verify one of our own tokens and return the user it names.
+
+        No provisioning here: the SSO round-trip that minted this token already
+        did that, and re-running it would need `role` claims our token does not
+        carry. This is the cheap path — an HMAC verification and one read, no
+        JWKS fetch, no IdP round-trip.
+        """
+        from odoo.addons.bamboo_abp_auth.controllers.auth import AbpOidc
+
+        claims = AbpOidc.validate_self_token(token, env)
+        uid = claims.get('uid')
+        if not uid:
+            raise Exception('Token has no "uid" claim.')
+        user = env['res.users'].sudo().browse(int(uid)).exists()
+        # `active` matters: archiving a user is how an administrator revokes
+        # access, and a token minted before that must stop working.
+        if not user or not user.active:
+            raise Exception('Token names user %s, which no longer exists.' % uid)
+        return user
 
     @classmethod
     def _sync_user_groups(cls, env, user, roles):
