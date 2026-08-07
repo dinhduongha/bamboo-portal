@@ -1,6 +1,6 @@
 {
     'name': 'Bamboo CORS',
-    'version': '19.0.1.1.0',
+    'version': '18.0.1.1.0',
     'category': 'Technical',
     'summary': 'CORS headers on every route, with a configurable origin allowlist',
     'description': """

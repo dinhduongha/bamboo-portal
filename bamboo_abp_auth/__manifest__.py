@@ -1,6 +1,6 @@
 {
     'name': 'Bamboo ABP Auth',
-    'version': '19.0.1.0.0',
+    'version': '18.0.1.0.0',
     'category': 'Technical',
     'summary': 'Standalone ABP AuthServer SSO: OIDC/JWT Bearer auth, params from odoo.conf (openid_*), tenant via res.company.tenant_uuid, roles via res.groups.role_code',
     'author': 'dinhduongha@gmail.com',
