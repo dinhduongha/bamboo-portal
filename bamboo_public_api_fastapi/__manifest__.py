@@ -8,8 +8,9 @@
     # a separate copy. Never merge this version line across branches.
     'version': '18.0.1.0.0',
     'license': 'LGPL-3',
-    'author': 'Bamboo',
-    'category': 'Website',
+    'author': 'dinhduongha@gmail.com',
+    'website': "https://github.com/dinhduongha/bamboo-portal",
+    'category': 'Technical',
     # Bridge module: optional everywhere, needs the OCA `fastapi` module (which
     # pulls in `endpoint_route_handler` itself, so it is not listed here).
     # bamboo_public_api works without it — the controllers are the default mode.

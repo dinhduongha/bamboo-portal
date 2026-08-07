@@ -14,9 +14,9 @@ partner). The website_* modules are SOFT dependencies — each app's routes guar
 module presence at runtime, so this addon installs on any Odoo and only the
 installed apps light up (see GET /bamboo/public/v1/meta).
     """,
-    'author': "Bamboo",
-    'website': "https://github.com/dinhduongha/bamboo-react",
-    'category': 'Website',
+    'author': "dinhduongha@gmail.com",
+    'website': "https://github.com/dinhduongha/bamboo-portal",
+    'category': 'Technical',
     'version': '18.0.1.0.0',
     # CORS is handled globally by bamboo_cors (reflects Origin + credentials), so
     # depend on it to guarantee the patch is loaded. website_sale/website_event/…

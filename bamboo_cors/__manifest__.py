@@ -20,7 +20,8 @@ sent. An origin that is not on the list gets no CORS headers at all and the
 request is handled exactly as if this module were absent. The value is read once
 at startup, so a change needs a server restart.
 """,
-    'author': 'Bamboo',
+    'author': 'dinhduongha@gmail.com',
+    'website': "https://github.com/dinhduongha/bamboo-portal",
     'license': 'LGPL-3',
     'depends': ['base'],
     'installable': True,

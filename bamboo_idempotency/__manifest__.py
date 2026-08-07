@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 {
-    'name': "Bamboo Idempotent Create",
+    'name': "Bamboo Idempotent Offline Create",
 
     'summary': """
         Server-side dedup key so an offline client can retry a create safely""",
@@ -22,8 +22,8 @@ their own UUIDv7 for queued writes, so the default only covers records created
 without one (the web UI, other addons, imports).
     """,
 
-    'author': "Bamboo",
-    'website': "https://www.fibotree.com",
+    'author': "dinhduongha@gmail.com",
+    'website': "https://github.com/dinhduongha/bamboo-portal",
     'category': 'Technical',
     'version': '18.0.1.0',
     'depends': ['base'],
