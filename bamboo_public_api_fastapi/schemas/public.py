@@ -12,13 +12,35 @@ class HealthOut(BaseModel):
 
 
 # --- auth ------------------------------------------------------------------
+# Field-for-field `portal_auth._user_dict`: the two modes must be swappable
+# without the client noticing, so the shapes are compared in test_public_parity.
 class MeOut(BaseModel):
     uid: int
-    login: str
     name: str
+    login: str
     email: str = ""
     partner_id: int
-    company: str
+    share: bool = False
+
+
+class LoginOut(MeOut):
+    access_token: str = ""
+
+
+class LoginIn(BaseModel):
+    login: Optional[str] = None
+    email: Optional[str] = None
+    password: str = ""
+
+
+class SignupIn(BaseModel):
+    name: str = ""
+    email: str = ""
+    password: str = ""
+
+
+class LogoutOut(BaseModel):
+    logged_out: bool
 
 
 # --- courses (website_slides) ---------------------------------------------
