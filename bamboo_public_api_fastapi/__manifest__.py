@@ -6,7 +6,7 @@
     # stack). It targets OCA fastapi 19.0 (19.0.1.0.2, from odoo19/addons-oca).
     # The v18.0 copy lives on branch 18.0 at version 18.0.x — kept as a separate
     # copy. Never merge this version line across branches.
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'license': 'LGPL-3',
     'author': 'dinhduongha@gmail.com',
     'website': "https://github.com/dinhduongha/bamboo-portal",

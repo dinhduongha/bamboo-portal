@@ -5,7 +5,10 @@ from fastapi import APIRouter, Depends
 from odoo.addons.fastapi.dependencies import odoo_env
 from odoo.api import Environment
 
-from odoo.addons.bamboo_public_api.controllers.common import APP_MODULES, FASTAPI_ROOT
+from odoo.addons.bamboo_public_api.controllers.common import (
+    APP_MODULES,
+    FASTAPI_PUBLIC_ROOT,
+)
 
 from ..schemas.envelope import ResponseEnvelope
 
@@ -26,7 +29,7 @@ async def meta(env: Annotated[Environment, Depends(odoo_env)]):
     data = {
         "apps": {app: _module_installed(env, mod) for app, mod in APP_MODULES.items()},
         "api_mode": "fastapi",
-        "api_root": FASTAPI_ROOT,
+        "api_root": FASTAPI_PUBLIC_ROOT,
         "company": {
             "name": company.name,
             "currency": company.currency_id.name,

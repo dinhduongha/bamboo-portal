@@ -4,7 +4,13 @@ import odoo
 from odoo import http
 from odoo.http import request
 
-from .common import API_ROOT, FASTAPI_ROOT, available_apps, fastapi_mode_active, ok
+from .common import (
+    API_ROOT,
+    FASTAPI_PUBLIC_ROOT,
+    available_apps,
+    fastapi_mode_active,
+    ok,
+)
 
 
 class BambooPublicMain(http.Controller):
@@ -28,7 +34,7 @@ class BambooPublicMain(http.Controller):
             # Which implementation is authoritative + the base path to call. The
             # React client uses `api_root` so the toggle needs no frontend redeploy.
             'api_mode': 'fastapi' if fastapi_on else 'controller',
-            'api_root': FASTAPI_ROOT if fastapi_on else API_ROOT,
+            'api_root': FASTAPI_PUBLIC_ROOT if fastapi_on else API_ROOT,
             'company': {
                 'name': company.name,
                 'currency': company.currency_id.name,
