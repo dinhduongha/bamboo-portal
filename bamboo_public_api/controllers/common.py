@@ -9,15 +9,17 @@ import functools
 import json
 import os
 
-from odoo import release
 from odoo.http import request
 from odoo.tools import config as odoo_config
 
 API_ROOT = '/bamboo/public/v1'
-# Root the optional FastAPI implementation mounts under (v19 only, bridge module
-# bamboo_public_api_fastapi). Distinct from API_ROOT so it never collides with the
-# controller routes — the toggle just decides which one the client calls.
-FASTAPI_ROOT = '/bamboo/fastapi/v1'
+# Root the optional FastAPI implementation mounts under (bridge module
+# bamboo_public_api_fastapi). Everything FastAPI serves lives under FASTAPI_ROOT:
+# this public API under FASTAPI_PUBLIC_ROOT, the generic ORM RPC under sibling
+# paths (/dataset/call_kw, /json2). Distinct from API_ROOT so it never collides
+# with the controller routes — the toggle just decides which one the client calls.
+FASTAPI_ROOT = '/fastapi/v1'
+FASTAPI_PUBLIC_ROOT = FASTAPI_ROOT + '/public'
 
 # app key -> the Odoo module that must be installed for that app's routes to work.
 # Drives GET /meta and the per-route presence guard. website_* are soft deps.
@@ -70,10 +72,12 @@ def _config(key, default=None):
 
 def fastapi_mode_active():
     """True when the API should be served by FastAPI instead of the controllers.
-    Requires: config `bamboo_public_api_mode == 'fastapi'` AND Odoo >= 19 AND the
-    `fastapi` module installed. Defaults to controller mode (fail-safe)."""
-    if release.version_info[0] < 19:
-        return False
+    Requires: config `bamboo_public_api_mode == 'fastapi'` AND the `fastapi`
+    module installed. Defaults to controller mode (fail-safe).
+
+    No version gate: the bridge module exists on both the 18.0 and 19.0 branches
+    (OCA fastapi ships for both). Only the generic /json2 RPC route is v19-only,
+    and that lives outside this public API."""
     if _config('bamboo_public_api_mode', 'controller') != 'fastapi':
         return False
     return module_installed('fastapi')
