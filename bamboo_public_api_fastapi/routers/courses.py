@@ -10,8 +10,12 @@ from odoo.addons.bamboo_public_api.controllers.common import image_url, page_met
 
 from ..schemas.envelope import ResponseEnvelope
 from ..schemas.public import CourseDetailOut, CourseOut, LessonOut
+from ._common import require_app
 
-courses_router = APIRouter(tags=["Courses"])
+# Soft dependency on `website_slides` — see routers/blog.py.
+courses_router = APIRouter(
+    tags=["Courses"], dependencies=[Depends(require_app("course"))]
+)
 
 
 def _course_out(channel) -> CourseOut:

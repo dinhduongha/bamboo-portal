@@ -6,7 +6,7 @@
     # stack). It targets OCA fastapi 18.0 (18.0.1.3.4, from addons-oca/rest-framework).
     # The v19.0 copy lives on branch 19.0 at version 19.0.x — kept as a separate
     # copy. Never merge this version line across branches.
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'license': 'LGPL-3',
     'author': 'dinhduongha@gmail.com',
     'website': "https://github.com/dinhduongha/bamboo-portal",

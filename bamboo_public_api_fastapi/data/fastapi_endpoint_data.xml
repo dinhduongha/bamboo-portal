@@ -2,9 +2,9 @@
 <odoo>
     <record id="fastapi_endpoint_bamboo_public" model="fastapi.endpoint">
         <field name="name">Bamboo Public API</field>
-        <field name="description">FastAPI implementation of the Bamboo public API (mirrors the /bamboo/public/v1 controllers).</field>
+        <field name="description">FastAPI implementation of the Bamboo public API (mirrors the /bamboo/public/v1 controllers) plus the generic ORM RPC routes.</field>
         <field name="app">bamboo_public</field>
-        <field name="root_path">/bamboo/fastapi/v1</field>
+        <field name="root_path">/fastapi/v1</field>
         <!-- The user the FastAPI app resolves `odoo_env` as. Public read API →
              the public user; routers still `.sudo()` for the actual reads. -->
         <field name="user_id" ref="base.public_user"/>

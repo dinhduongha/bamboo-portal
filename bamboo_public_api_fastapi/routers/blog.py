@@ -9,8 +9,11 @@ from odoo.addons.bamboo_public_api.controllers.common import cover_image_url, pa
 
 from ..schemas.envelope import ResponseEnvelope
 from ..schemas.public import BlogOut, PostCardOut, PostDetailOut
+from ._common import require_app
 
-blog_router = APIRouter(tags=["Blog"])
+# `website_blog` is a soft dependency: without it `blog.blog` does not exist and
+# every route here would 500. The guard 404s them instead, like the controller.
+blog_router = APIRouter(tags=["Blog"], dependencies=[Depends(require_app("blog"))])
 
 
 def _post_card(post) -> PostCardOut:
