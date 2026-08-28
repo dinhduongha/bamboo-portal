@@ -21,6 +21,11 @@
     'depends': [
         'dms',
         'portal',
+        # 16C: the payment framework, not a provider. Core Odoo ships no
+        # Vietnamese provider (no VNPay, no MoMo), and the parts that matter
+        # -- callback verification, deduplication, the transaction state
+        # machine -- belong to `payment` itself.
+        'payment',
     ],
     'data': [
         # Security first, views after — same discipline as `dms`'s manifest.

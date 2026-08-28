@@ -64,8 +64,12 @@ class DmsPortalApi(models.AbstractModel):
         resolves it. A signature with nowhere to put one cannot be talked
         into accepting one later by accident.
         """
-        allowed = self.env.user.dms_allowed_partner_ids()
-        if not allowed:
+        if outlet_id is None and not self.env.user.dms_allowed_partner_ids():
+            # Only this exact case is an empty list: nobody named an outlet
+            # and the caller has none. A NAMED outlet always goes through the
+            # check below, so a revoked entitlement raises instead of quietly
+            # returning "nothing for sale" -- which is the same answer a
+            # working account gets for an empty catalog.
             return []
         outlet = self._dms_portal_outlet(outlet_id)
         listings = self.env['dms.outlet.product.listing'].sudo()._effective_for(

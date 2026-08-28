@@ -10,3 +10,5 @@ from . import test_portal_exception
 from . import test_portal_http
 from . import test_portal_documents
 from . import test_portal_reverse
+from . import test_portal_payment
+from . import test_portal_security_surface
