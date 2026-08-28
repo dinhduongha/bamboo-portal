@@ -72,6 +72,26 @@ class TestOutletQr(PortalCatalogCase):
         with self.assertRaises(UserError):
             qr.action_revoke(reason='')
 
+    def test_the_model_has_a_company_scoped_record_rule(self):
+        """An ACL row with no record rule is unrestricted for that group. A
+        portal user reading every QR row in the database can start a session
+        at any shop in the country. `dms`'s TestRuleMatrixInvariants enforces
+        this across the whole rule set; stated here so the reason travels
+        with the file that caused it."""
+        rules = self.env['ir.rule'].search([
+            ('model_id.model', '=', 'dms.outlet.qr')])
+        self.assertTrue(rules, 'no record rule on dms.outlet.qr')
+        for rule in rules:
+            self.assertIn('company_id', rule.domain_force or '')
+
+    def test_a_portal_user_cannot_read_another_outlets_qr_row(self):
+        self._entitle()
+        stray = self.env['dms.outlet.qr'].sudo().create({
+            'outlet_id': self.outlet_b.id, 'company_id': self.parent.id})
+        found = self.env['dms.outlet.qr'].with_user(self.buyer).search([
+            ('id', '=', stray.id)])
+        self.assertFalse(found)
+
     def test_an_outlet_can_be_reissued_a_code(self):
         first = self._qr()
         first.action_revoke(reason='reprinting the sign')
