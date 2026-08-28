@@ -131,12 +131,19 @@
         <field name="view_mode">list,form</field>
     </record>
 
-    <!-- Hung off the existing DMS root. `views/dms_ia_menu.xml` in `dms` is
-         the LAST data file loaded there and re-parents the nine sections; a
-         menuitem in a separate addon loads after it and is therefore safe,
-         but it must still name a parent that exists. -->
+    <!-- Under one of the NINE, never a tenth beside them.
+         `TestInformationArchitecture::test_the_dms_root_has_exactly_the_nine_
+         sections_of_section_4` caught the first attempt: plan 12 section 4
+         replaced sixteen first-level entries with nine because "16 muc cap
+         mot la mot danh sach model. Chin muc la mot cach lam viec", and an
+         optional addon quietly adding a tenth is how that comes back one
+         addon at a time.
+
+         "Ke toan & Tich hop" is the right one of the nine: a channel account
+         is an integration, and it sits beside the other external interfaces
+         rather than starting a section of its own. -->
     <menuitem id="menu_dms_omnichannel_root" name="Omnichannel"
-              parent="dms.menu_dms_root" sequence="80"/>
+              parent="dms.menu_dms_ia_finance" sequence="80"/>
     <menuitem id="menu_dms_channel_account" name="Channel Accounts"
               parent="menu_dms_omnichannel_root"
               action="action_dms_channel_account" sequence="10"/>

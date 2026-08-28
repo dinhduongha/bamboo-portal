@@ -61,3 +61,22 @@ class TestAddonBoundary(TransactionCase):
             'custom-addons', path.parts,
             f'dms_portal loaded from {path}, not from custom-addons; an '
             f'earlier entry in addons_path is shadowing it')
+
+    def test_this_addon_does_not_add_a_tenth_section_to_the_dms_root(self):
+        """Plan 12 section 4 replaced sixteen first-level entries with nine
+        because "16 muc cap mot la mot danh sach model. Chin muc la mot cach
+        lam viec". An optional addon quietly adding a tenth is how sixteen
+        comes back, one addon at a time.
+
+        `dms` has its own invariant over the whole tree; this states the rule
+        where the mistake would be made.
+        """
+        root = self.env.ref('dms.menu_dms_root')
+        for xmlid in ('dms_portal.menu_dms_portal_root',):
+            menu = self.env.ref(xmlid, False)
+            self.assertTrue(menu, xmlid)
+            self.assertNotEqual(
+                menu.parent_id, root,
+                f'{xmlid} is a tenth section beside the nine')
+            self.assertEqual(menu.parent_id.parent_id, root,
+                             f'{xmlid} should sit under one of the nine')

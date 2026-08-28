@@ -66,8 +66,13 @@
         <field name="view_mode">list,form</field>
     </record>
 
+    <!-- Under one of the nine (see the note in `dms_omnichannel`), not a
+         tenth beside them. "To chuc, Bao cao va Cau hinh" holds the
+         entitlement register and the QR codes; the exception queue is
+         operational but splitting one small addon across three sections
+         costs more navigation than it saves. -->
     <menuitem id="menu_dms_portal_root" name="B2B Portal"
-              parent="dms.menu_dms_root" sequence="82"/>
+              parent="dms.menu_dms_ia_config" sequence="82"/>
     <menuitem id="menu_dms_portal_entitlement" name="Entitlements"
               parent="menu_dms_portal_root"
               action="action_dms_portal_entitlement" sequence="10"/>

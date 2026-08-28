@@ -118,3 +118,19 @@ class TestChannelWebhookVerification(ChannelCase):
         with self.assertRaises(UserError):
             self.account.dms_verify_webhook(
                 '{"a":1}', self._sign('{"a":1}', now), now)
+
+
+@tagged('post_install', '-at_install')
+class TestOmnichannelMenuPlacement(TransactionCase):
+
+    def test_this_addon_does_not_add_a_tenth_section_to_the_dms_root(self):
+        """See plan 12 section 4. Nine sections is a way of working; sixteen
+        was a list of models, and it comes back one optional addon at a
+        time."""
+        root = self.env.ref('dms.menu_dms_root')
+        menu = self.env.ref('dms_omnichannel.menu_dms_omnichannel_root', False)
+        self.assertTrue(menu)
+        self.assertNotEqual(menu.parent_id, root,
+                            'a tenth section beside the nine')
+        self.assertEqual(menu.parent_id.parent_id, root,
+                         'should sit under one of the nine')
