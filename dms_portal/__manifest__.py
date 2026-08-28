@@ -26,6 +26,11 @@
         # -- callback verification, deduplication, the transaction state
         # machine -- belong to `payment` itself.
         'payment',
+        # 16D. Plan 16 section 5.1 forbids this plan from defining a second
+        # staging model for external orders: the channel account and the
+        # identity/order mappings belong to plan 18, and the self-service
+        # flow REUSES them. That reuse is a dependency.
+        'dms_omnichannel',
     ],
     'data': [
         # Security first, views after — same discipline as `dms`'s manifest.

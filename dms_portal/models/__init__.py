@@ -5,3 +5,6 @@ from . import dms_portal_exception
 from . import dms_portal_documents
 from . import dms_portal_reverse
 from . import dms_portal_payment
+from . import dms_outlet_qr
+from . import dms_portal_zalo
+from . import dms_eb2b_bridge

@@ -12,3 +12,5 @@ from . import test_portal_documents
 from . import test_portal_reverse
 from . import test_portal_payment
 from . import test_portal_security_surface
+from . import test_portal_zalo
+from . import test_eb2b_bridge
