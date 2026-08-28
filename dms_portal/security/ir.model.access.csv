@@ -1,1 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dms_portal_entitlement_admin,dms.portal.entitlement admin,model_dms_portal_entitlement,dms.group_dms_sale_admin,1,1,1,0
+access_dms_portal_entitlement_portal,dms.portal.entitlement portal read,model_dms_portal_entitlement,base.group_portal,1,0,0,0
