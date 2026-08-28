@@ -6,3 +6,4 @@ from . import test_entitlement_revoke
 from . import test_portal_security
 from . import test_portal_catalog
 from . import test_portal_order_api
+from . import test_portal_exception

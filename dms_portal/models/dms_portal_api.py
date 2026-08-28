@@ -112,6 +112,11 @@ class DmsPortalApi(models.AbstractModel):
         mean two lists to keep in step.
         """
         outlet = self._dms_portal_outlet(outlet_id)
-        return self.env['dms.order.api'].sudo().dms_order_submit(
+        result = self.env['dms.order.api'].sudo().dms_order_submit(
             outlet.id, lines, vals=vals, operation_uuid=operation_uuid,
             accept_price_change=accept_price_change)
+        # Log the refusal, then return it unchanged. Swallowing it here would
+        # leave the buyer looking at a form that did nothing.
+        self.env['dms.portal.exception']._dms_record_errors(
+            outlet, result.get('errors'))
+        return result
