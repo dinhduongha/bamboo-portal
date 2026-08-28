@@ -81,6 +81,18 @@ class TestPortalException(PortalCatalogCase):
         with self.assertRaises(AccessError):
             self.env['dms.portal.exception'].with_user(self.buyer).search([])
 
+    def test_the_model_has_a_company_scoped_record_rule(self):
+        """An ACL row without a rule is unrestricted for that group: every
+        Sales Admin would read every refused portal order in every region.
+        `dms`'s own `TestRuleMatrixInvariants` enforces this across the whole
+        rule set; this states it locally so the reason travels with the file
+        that caused it."""
+        rules = self.env['ir.rule'].search([
+            ('model_id.model', '=', 'dms.portal.exception')])
+        self.assertTrue(rules, 'no record rule on dms.portal.exception')
+        for rule in rules:
+            self.assertIn('company_id', rule.domain_force or '')
+
     def test_the_refusal_still_reaches_the_buyer(self):
         """Logging it must not swallow it. A queue that eats the error leaves
         the buyer staring at a form that did nothing."""

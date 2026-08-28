@@ -17,5 +17,31 @@
             <field name="perm_unlink" eval="False"/>
         </record>
 
+
+        <!-- An ACL row without a record rule is unrestricted for that group:
+             every Sales Admin would read every refused portal order in every
+             region. `dms`'s own invariant
+             `TestRuleMatrixInvariants::test_every_acl_model_has_at_least_one_rule`
+             caught exactly that here, and
+             `test_every_rule_scopes_by_company` requires the company
+             predicate below rather than a bare group grant. -->
+        <record id="rule_dms_portal_exception_admin" model="ir.rule">
+            <field name="name">Portal exception (assignment)</field>
+            <field name="model_id" ref="model_dms_portal_exception"/>
+            <field name="groups" eval="[(4, ref('dms.group_dms_sale_admin'))]"/>
+            <field name="domain_force">[('company_id', 'in', user._dms_assigned_company_ids('admin').ids)]</field>
+        </record>
+
+        <record id="rule_dms_portal_exception_supervisor" model="ir.rule">
+            <field name="name">Portal exception supervisor (assignment)</field>
+            <field name="model_id" ref="model_dms_portal_exception"/>
+            <field name="groups" eval="[(4, ref('dms.group_dms_sale_supervisor'))]"/>
+            <field name="domain_force">[('company_id', 'in', user._dms_assigned_company_ids('admin').ids)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
     </data>
 </odoo>
