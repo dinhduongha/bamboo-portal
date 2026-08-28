@@ -24,6 +24,7 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+        'security/dms_portal_security.xml',
     ],
     'installable': True,
     'application': False,

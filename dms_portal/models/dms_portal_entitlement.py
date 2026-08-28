@@ -87,6 +87,11 @@ class DmsPortalEntitlement(models.Model):
                 'approved_by_id': self.env.uid,
                 'approval_date': fields.Datetime.now(),
             })
+            # Granting invalidates too. A session opened before the grant
+            # carries a token computed from the old version; leaving it valid
+            # would mean the grant needs a re-login to take effect -- the same
+            # staleness bug, pointing the pleasant way.
+            rec._dms_kill_sessions()
         return True
 
     def action_revoke(self, reason=None):
@@ -109,13 +114,46 @@ class DmsPortalEntitlement(models.Model):
         return True
 
     def _dms_kill_sessions(self):
-        """Hook for Task 5. A revoked entitlement whose session is still open
-        is a read permission that is still open."""
+        """Make every open session of the holder invalid, at once.
+
+        Odoo's session token is an HMAC over `_get_session_token_fields()`,
+        and `http.py` recomputes it on every request. Bumping a field inside
+        that set is how core invalidates sessions for passkeys, so this
+        borrows the mechanism rather than inventing a second one.
+
+        The ormcache on `_compute_session_token` is keyed by `sid`, so it has
+        to be cleared as well -- otherwise the old token keeps being handed
+        back from memory and the revocation takes effect only after a
+        restart.
+        """
+        users = self.env['res.users']
+        for rec in self:
+            user = rec.user_id.sudo()
+            user.dms_portal_entitlement_version += 1
+            users |= user
+        # `_session_token_get_values` reads the row with RAW SQL. An ORM write
+        # that has not been flushed is invisible to it, so the token comes back
+        # unchanged and the revocation quietly does nothing.
+        users.flush_recordset(['dms_portal_entitlement_version'])
+        self.env.registry.clear_cache()
         return True
 
 
 class ResUsersPortalEntitlement(models.Model):
     _inherit = 'res.users'
+
+    #: Bumped whenever an entitlement of this user is approved or revoked.
+    #: Its only job is to be part of the session token, below.
+    dms_portal_entitlement_version = fields.Integer(
+        default=0, copy=False, readonly=True,
+        help='Bumped on every entitlement change so open sessions stop '
+             'validating. Not a business number.')
+
+    def _get_session_token_fields(self):
+        """A field outside this set cannot invalidate a session, however
+        diligently it is bumped."""
+        return super()._get_session_token_fields() | {
+            'dms_portal_entitlement_version'}
 
     def dms_allowed_partner_ids(self):
         """Ids this user may see, from APPROVED entitlements only.
