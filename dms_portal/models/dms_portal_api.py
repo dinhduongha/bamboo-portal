@@ -30,7 +30,7 @@ class DmsPortalApi(models.AbstractModel):
         allowed = self.env.user.dms_allowed_partner_ids()
         if outlet_id is None:
             if len(allowed) == 1:
-                return self.env['res.partner'].browse(allowed[0])
+                return self._dms_browse_outlet(allowed[0])
             raise AccessError(
                 'Name the outlet: this account is entitled to '
                 f'{len(allowed)} of them.')
@@ -41,7 +41,19 @@ class DmsPortalApi(models.AbstractModel):
             # outlet exists.
             raise AccessError(
                 'No approved entitlement for this outlet.')
-        return self.env['res.partner'].browse(outlet_id)
+        return self._dms_browse_outlet(outlet_id)
+
+    @api.model
+    def _dms_browse_outlet(self, outlet_id):
+        """`sudo`, and the entitlement above is why that is safe.
+
+        A portal user has no record rule granting them any `res.partner` row,
+        so reading `outlet.company_id` as themselves raises AccessError --
+        which the route turns into a 404 for an outlet the caller IS entitled
+        to. Authorization here is the approved entitlement, not Odoo's partner
+        rules; once it has passed, the read has to be able to happen.
+        """
+        return self.env['res.partner'].sudo().browse(outlet_id)
 
     @api.model
     def dms_portal_catalog(self, outlet_id=None):

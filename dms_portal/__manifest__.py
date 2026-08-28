@@ -23,8 +23,10 @@
         'portal',
     ],
     'data': [
+        # Security first, views after — same discipline as `dms`'s manifest.
         'security/ir.model.access.csv',
         'security/dms_portal_security.xml',
+        'views/portal_templates.xml',
     ],
     'installable': True,
     'application': False,

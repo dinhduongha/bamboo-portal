@@ -7,3 +7,4 @@ from . import test_portal_security
 from . import test_portal_catalog
 from . import test_portal_order_api
 from . import test_portal_exception
+from . import test_portal_http
