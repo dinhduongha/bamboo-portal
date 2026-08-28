@@ -4,3 +4,5 @@ from . import test_portal_scope
 from . import test_portal_rpc
 from . import test_entitlement_revoke
 from . import test_portal_security
+from . import test_portal_catalog
+from . import test_portal_order_api
