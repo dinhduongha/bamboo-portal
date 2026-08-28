@@ -131,3 +131,32 @@ class ResUsersPortalEntitlement(models.Model):
             ('user_id', '=', self.id),
             ('state', '=', 'approved'),
         ]).partner_id.ids
+
+    @api.model
+    def dms_portal_context(self):
+        """POST /web/dataset/call_kw/res.users/dms_portal_context
+           POST /json/2/res.users/dms_portal_context
+
+        Takes no argument, deliberately. Everything is derived from the
+        authenticated user, so a client cannot ask for a partner or a company
+        it has no approved entitlement for -- and a parameter added here
+        later would have to be added on purpose rather than slipping in
+        (CLAUDE.md section 6).
+        """
+        return self.env.user._dms_portal_build_context()
+
+    def _dms_portal_build_context(self):
+        """Private: not reachable over RPC."""
+        self.ensure_one()
+        entitlements = self.env['dms.portal.entitlement'].sudo().search([
+            ('user_id', '=', self.id),
+            ('state', '=', 'approved'),
+        ])
+        return {
+            'partners': [{
+                'id': ent.partner_id.id,
+                'name': ent.partner_id.display_name,
+                'scope': ent.scope,
+            } for ent in entitlements],
+            'company_ids': entitlements.company_id.ids,
+        }
