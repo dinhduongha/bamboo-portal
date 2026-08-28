@@ -15,6 +15,8 @@ class DmsChannelConversation(models.Model):
     promotion is recorded as accepted because a notification was delivered.
     """
     _name = 'dms.channel.conversation'
+    _inherit = ['dms.display.name.mixin']
+    _dms_display_fields = ('external_conversation_id', 'identity_id')
     _description = 'DMS Channel Conversation'
     _order = 'last_message_at desc'
 

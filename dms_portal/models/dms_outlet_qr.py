@@ -19,6 +19,8 @@ class DmsOutletQr(models.Model):
     shop, photographable from the street, and permanent once printed.
     """
     _name = 'dms.outlet.qr'
+    _inherit = ['dms.display.name.mixin']
+    _dms_display_fields = ('code', 'outlet_id')
     _description = 'DMS Outlet QR Code'
     _order = 'create_date desc'
 

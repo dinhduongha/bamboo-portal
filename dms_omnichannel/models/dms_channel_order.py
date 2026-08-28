@@ -19,6 +19,8 @@ class DmsChannelOrder(models.Model):
     SKU, assortment, pricelist and credit itself.
     """
     _name = 'dms.channel.order'
+    _inherit = ['dms.display.name.mixin']
+    _dms_display_fields = ('external_order_id', 'partner_id')
     _description = 'DMS External Channel Order'
     _order = 'received_at desc'
 

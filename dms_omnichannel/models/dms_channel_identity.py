@@ -15,6 +15,8 @@ class DmsChannelIdentity(models.Model):
     knows the shop's number, not that they own the shop.
     """
     _name = 'dms.channel.identity'
+    _inherit = ['dms.display.name.mixin']
+    _dms_display_fields = ('external_user_id', 'channel_account_id')
     _description = 'DMS Channel External Identity'
     _order = 'create_date desc'
 

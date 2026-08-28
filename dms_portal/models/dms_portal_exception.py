@@ -14,6 +14,8 @@ class DmsPortalException(models.Model):
     assortment names, integration text -- is not portal-facing.
     """
     _name = 'dms.portal.exception'
+    _inherit = ['dms.display.name.mixin']
+    _dms_display_fields = ('kind', 'outlet_id', 'user_id')
     _description = 'DMS Portal Exception'
     _order = 'create_date desc'
 

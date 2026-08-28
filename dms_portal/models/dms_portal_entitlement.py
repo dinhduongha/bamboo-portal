@@ -10,6 +10,8 @@ class DmsPortalEntitlement(models.Model):
     the same thing: the grant has to be a row somebody approved.
     """
     _name = 'dms.portal.entitlement'
+    _inherit = ['dms.display.name.mixin']
+    _dms_display_fields = ('user_id', 'partner_id', 'scope')
     _description = 'DMS Portal Entitlement'
     _check_company_auto = True
     _order = 'user_id, partner_id'
