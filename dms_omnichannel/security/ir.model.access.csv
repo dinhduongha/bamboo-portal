@@ -3,3 +3,4 @@ access_dms_channel_account_manager,dms.channel.account manager,model_dms_channel
 access_dms_channel_account_admin,dms.channel.account admin,model_dms_channel_account,dms.group_dms_sale_admin,1,0,0,0
 access_dms_channel_identity_admin,dms.channel.identity admin,model_dms_channel_identity,dms.group_dms_sale_admin,1,1,1,0
 access_dms_channel_order_admin,dms.channel.order admin,model_dms_channel_order,dms.group_dms_sale_admin,1,1,1,0
+access_dms_channel_conversation_admin,dms.channel.conversation admin,model_dms_channel_conversation,dms.group_dms_sale_admin,1,1,1,0
