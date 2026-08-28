@@ -126,3 +126,28 @@ class DmsChannelIdentity(models.Model):
             raise UserError('A revocation needs a reason.')
         self.write({'state': 'revoked', 'resolution_note': reason})
         return True
+
+    def dms_erase_pii(self, reason=None):
+        """Honour a deletion request without destroying the audit trail.
+
+        Section 8 requires deletion and export requests to be answerable. It
+        also requires an audit. Those pull opposite ways, and deleting the row
+        outright resolves the tension in the wrong direction: the link record
+        is the evidence of who could see what, and an incident asks exactly
+        that question.
+
+        So the PERSONAL data goes -- the phone number the channel returned --
+        and the row stays, revoked and annotated. What remains is an opaque
+        external id and a state, which identifies nobody on its own.
+        """
+        reason = (reason or '').strip()
+        if not reason:
+            raise UserError('A deletion request needs a reason recorded.')
+        for rec in self:
+            rec.write({
+                'phone_from_channel': False,
+                'state': 'revoked',
+                'consent': False,
+                'resolution_note': f'PII erased on request: {reason}',
+            })
+        return True

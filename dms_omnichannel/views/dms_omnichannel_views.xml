@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Section 9: "Channel Accounts/config health and capabilities without
+         raw secrets." The secret_ref field carries a `groups` attribute on
+         the model, so it is not on this form for anyone below Manager — and
+         the VALUE is not in the database at all. -->
+    <record id="view_dms_channel_account_list" model="ir.ui.view">
+        <field name="name">dms.channel.account.list</field>
+        <field name="model">dms.channel.account</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="channel"/>
+                <field name="external_account_id"/>
+                <field name="company_id"/>
+                <field name="can_receive_orders"/>
+                <field name="can_send_messages"/>
+                <field name="secret_rotated_at"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dms_channel_account_form" model="ir.ui.view">
+        <field name="name">dms.channel.account.form</field>
+        <field name="model">dms.channel.account</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_activate" type="object"
+                            string="Activate" class="btn-primary"
+                            invisible="state == 'active'"/>
+                    <button name="action_suspend" type="object"
+                            string="Suspend"
+                            invisible="state != 'active'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="channel"/>
+                            <field name="external_account_id"/>
+                            <field name="company_id"/>
+                        </group>
+                        <group>
+                            <field name="can_receive_orders"/>
+                            <field name="can_send_messages"/>
+                            <field name="replay_window_seconds"/>
+                            <field name="secret_ref"/>
+                            <field name="secret_rotated_at"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Section 9: "External order/event exception queue with mapping, price
+         mismatch and retry." -->
+    <record id="view_dms_channel_order_list" model="ir.ui.view">
+        <field name="name">dms.channel.order.list</field>
+        <field name="model">dms.channel.order</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="received_at"/>
+                <field name="channel_account_id"/>
+                <field name="external_order_id"/>
+                <field name="partner_id"/>
+                <field name="sale_order_id"/>
+                <field name="fulfillment_state"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dms_channel_identity_list" model="ir.ui.view">
+        <field name="name">dms.channel.identity.list</field>
+        <field name="model">dms.channel.identity</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="create_date"/>
+                <field name="channel_account_id"/>
+                <field name="external_user_id"/>
+                <field name="partner_id"/>
+                <field name="state" widget="badge"/>
+                <field name="resolution_note"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dms_channel_conversation_list" model="ir.ui.view">
+        <field name="name">dms.channel.conversation.list</field>
+        <field name="model">dms.channel.conversation</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="last_message_at"/>
+                <field name="channel_account_id"/>
+                <field name="partner_id"/>
+                <field name="assigned_user_id"/>
+                <field name="sla_due_at"/>
+                <field name="consent"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_dms_channel_account" model="ir.actions.act_window">
+        <field name="name">Channel Accounts</field>
+        <field name="res_model">dms.channel.account</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_dms_channel_identity" model="ir.actions.act_window">
+        <field name="name">Channel Identities</field>
+        <field name="res_model">dms.channel.identity</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_needs_a_human': 1}</field>
+    </record>
+
+    <record id="action_dms_channel_order" model="ir.actions.act_window">
+        <field name="name">External Orders</field>
+        <field name="res_model">dms.channel.order</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_dms_channel_conversation" model="ir.actions.act_window">
+        <field name="name">Unified Inbox</field>
+        <field name="res_model">dms.channel.conversation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Hung off the existing DMS root. `views/dms_ia_menu.xml` in `dms` is
+         the LAST data file loaded there and re-parents the nine sections; a
+         menuitem in a separate addon loads after it and is therefore safe,
+         but it must still name a parent that exists. -->
+    <menuitem id="menu_dms_omnichannel_root" name="Omnichannel"
+              parent="dms.menu_dms_root" sequence="80"/>
+    <menuitem id="menu_dms_channel_account" name="Channel Accounts"
+              parent="menu_dms_omnichannel_root"
+              action="action_dms_channel_account" sequence="10"/>
+    <menuitem id="menu_dms_channel_identity" name="Identities"
+              parent="menu_dms_omnichannel_root"
+              action="action_dms_channel_identity" sequence="20"/>
+    <menuitem id="menu_dms_channel_order" name="External Orders"
+              parent="menu_dms_omnichannel_root"
+              action="action_dms_channel_order" sequence="30"/>
+    <menuitem id="menu_dms_channel_conversation" name="Unified Inbox"
+              parent="menu_dms_omnichannel_root"
+              action="action_dms_channel_conversation" sequence="40"/>
+
+</odoo>

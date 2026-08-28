@@ -20,6 +20,8 @@
     'data': [
         'security/ir.model.access.csv',
         'security/dms_omnichannel_security.xml',
+        'data/dms_channel_retention.xml',
+        'views/dms_omnichannel_views.xml',
     ],
     'installable': True,
     'application': False,

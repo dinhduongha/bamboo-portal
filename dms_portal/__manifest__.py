@@ -37,6 +37,7 @@
         'security/ir.model.access.csv',
         'security/dms_portal_security.xml',
         'views/portal_templates.xml',
+        'views/dms_portal_backend_views.xml',
     ],
     'installable': True,
     'application': False,

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Section 8: "Data minimization, deletion/export request, media
+             retention and channel terms."
+
+             Declared as DATA against `dms.retention.policy`, not as a second
+             purge mechanism. That model already carries the enforcement cron,
+             the legal-hold gate and the audit; a cron of our own would be a
+             second thing to monitor and a second thing to forget during an
+             investigation.
+
+             `legal_basis` is required by that model on purpose: a retention
+             table without it is a list of numbers nobody can defend when
+             asked. -->
+
+        <record id="retention_channel_conversation" model="dms.retention.policy">
+            <field name="data_class">channel-conversation</field>
+            <field name="model_name">dms.channel.conversation</field>
+            <field name="date_field">last_message_at</field>
+            <field name="retention_days">180</field>
+            <field name="legal_basis">Customer support history. Kept long enough to resolve a dispute about an order placed through the channel, and no longer: the conversation contains the shop owner's own words and is not an accounting record.</field>
+            <field name="rpo_minutes">60</field>
+            <field name="rto_minutes">240</field>
+        </record>
+
+        <record id="retention_channel_identity" model="dms.retention.policy">
+            <field name="data_class">channel-identity</field>
+            <field name="model_name">dms.channel.identity</field>
+            <field name="date_field">create_date</field>
+            <field name="retention_days">365</field>
+            <field name="legal_basis">Links an external account to an Outlet. Kept while the link is live and for a year after, because a revoked link is the evidence of who could see what — deleting it deletes the answer to the only question an incident asks.</field>
+            <field name="rpo_minutes">60</field>
+            <field name="rto_minutes">240</field>
+        </record>
+
+        <record id="retention_channel_order" model="dms.retention.policy">
+            <field name="data_class">channel-order</field>
+            <field name="model_name">dms.channel.order</field>
+            <field name="date_field">received_at</field>
+            <field name="retention_days">2555</field>
+            <field name="legal_basis">Reconciliation evidence for an order that became a Sale Order and an invoice. Seven years, matching the accounting documents it reconciles against — a staging row deleted before its invoice leaves the invoice unexplained.</field>
+            <field name="rpo_minutes">15</field>
+            <field name="rto_minutes">120</field>
+        </record>
+
+    </data>
+</odoo>
