@@ -51,7 +51,7 @@ class DmsChannelConversation(models.Model):
     def action_assign(self, user):
         for rec in self:
             if rec.state == 'closed':
-                raise UserError('Cannot assign a closed conversation.')
+                raise UserError(self.env._("Cannot assign a closed conversation."))
             rec.write({'assigned_user_id': user.id, 'state': 'assigned'})
         return True
 

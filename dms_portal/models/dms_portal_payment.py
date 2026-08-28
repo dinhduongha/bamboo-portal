@@ -26,7 +26,7 @@ class DmsPortalPayment(models.AbstractModel):
         order = self.env['sale.order'].sudo().browse(int(order_id)).exists()
         allowed = self.env.user.dms_allowed_partner_ids()
         if not order or order.partner_id.id not in allowed:
-            raise AccessError('No approved entitlement for this order.')
+            raise AccessError(self.env._("No approved entitlement for this order."))
         return {
             'order_id': order.id,
             # No amount parameter. `dms_vietqr_payload` accepts one, and for
@@ -61,22 +61,21 @@ class DmsPortalPayment(models.AbstractModel):
             int(invoice_id)).exists()
         allowed = self.env.user.dms_allowed_partner_ids()
         if not invoice or invoice.partner_id.id not in allowed:
-            raise AccessError('No approved entitlement for this invoice.')
+            raise AccessError(self.env._("No approved entitlement for this invoice."))
         if invoice.move_type not in ('out_invoice', 'out_refund') \
                 or invoice.state != 'posted':
-            raise UserError('Only a posted customer invoice can be paid.')
+            raise UserError(self.env._("Only a posted customer invoice can be paid."))
         provider = self.env['payment.provider'].sudo().browse(
             int(provider_id)).exists()
         if not provider or provider.state == 'disabled':
-            raise UserError('Unknown or disabled payment provider.')
+            raise UserError(self.env._("Unknown or disabled payment provider."))
         method = provider.payment_method_ids[:1]
         if not method:
             # Without this the create dies on `null value in column
             # "payment_method_id" violates not-null constraint`, which reads
             # like a bug in this code and is in fact an unconfigured provider.
             raise UserError(
-                f'{provider.name} has no payment method enabled. Configure '
-                f'one before offering it on the portal.')
+                self.env._("%s has no payment method enabled. Configure one before offering it on the portal.", provider.name))
         tx = self.env['payment.transaction'].sudo().create({
             'provider_id': provider.id,
             'payment_method_id': method.id,

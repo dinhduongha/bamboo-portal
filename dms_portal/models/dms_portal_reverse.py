@@ -27,7 +27,7 @@ class DmsPortalReverse(models.AbstractModel):
         """
         outlet = self._dms_portal_outlet(outlet_id)
         if not lines:
-            raise UserError('A return needs at least one line.')
+            raise UserError(self.env._("A return needs at least one line."))
         # Every portal line must name its source sale line.
         #
         # `dms.return.order._dms_check_eligibility` already allows an
@@ -40,9 +40,7 @@ class DmsPortalReverse(models.AbstractModel):
         undocumented = [line for line in lines if not line.get('sale_line_id')]
         if undocumented:
             raise UserError(
-                'A return from the portal has to name the delivery line it '
-                'came from. Contact your sales representative for a return '
-                'without one.')
+                self.env._("A return from the portal has to name the delivery line it came from. Contact your sales representative for a return without one."))
 
         def _run():
             order = self.env['dms.return.order'].sudo().create({

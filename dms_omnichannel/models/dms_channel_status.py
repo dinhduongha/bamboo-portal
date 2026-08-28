@@ -62,7 +62,7 @@ class DmsChannelOrderStatus(models.Model):
         authoritative direction for these values."""
         self.ensure_one()
         if state not in dict(self._fields['fulfillment_state'].selection):
-            raise UserError(f'Unknown fulfillment state {state!r}.')
+            raise UserError(self.env._("Unknown fulfillment state %r.", state))
         self.write({'fulfillment_state': state, 'status_source': 'odoo',
                     'status_version': self.status_version + 1})
         # The actual send is an integration operation, so it inherits the

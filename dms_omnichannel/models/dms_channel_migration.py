@@ -74,18 +74,15 @@ class DmsChannelAccountMigration(models.Model):
         """
         new_secret_ref = (new_secret_ref or '').strip()
         if not new_secret_ref:
-            raise UserError('Name the config key holding the new secret.')
+            raise UserError(self.env._("Name the config key holding the new secret."))
         if not self.env['ir.config_parameter'].sudo().get_param(
                 new_secret_ref):
             raise UserError(
-                f'Nothing stored under {new_secret_ref!r}. Rotating onto an '
-                f'empty key disables verification while looking like it '
-                f'worked.')
+                self.env._("Nothing stored under %r. Rotating onto an empty key disables verification while looking like a rotation.", new_secret_ref))
         for rec in self:
             if rec.sudo().secret_ref == new_secret_ref:
                 raise UserError(
-                    'That is the key already in use — rotating onto it '
-                    'changes nothing and would be recorded as a rotation.')
+                    self.env._("That is the key already in use \u2014 rotating onto it changes nothing and would be recorded as a rotation."))
             rec.sudo().write({
                 'secret_ref': new_secret_ref,
                 'secret_rotated_at': fields.Datetime.now(),
@@ -118,7 +115,7 @@ class DmsEb2bOrderKeyBackfill(models.Model):
     def dms_backfill_channel_orders(self, channel_account):
         """Attach legacy staging rows to a channel account, idempotently."""
         if not channel_account:
-            raise UserError('Name the channel account these rows belong to.')
+            raise UserError(self.env._("Name the channel account these rows belong to."))
         ChannelOrder = self.env['dms.channel.order'].sudo()
         touched = self.browse()
         for rec in self.sudo().search([('dms_channel_order_id', '=', False)]):

@@ -70,9 +70,7 @@ class DmsChannelAccount(models.Model):
         for rec in self:
             if rec.replay_window_seconds <= 0:
                 raise ValidationError(
-                    'The replay window must be positive. Zero or less accepts '
-                    'nothing; there is no value that means "no limit" here on '
-                    'purpose.')
+                    self.env._("The replay window must be positive. Zero or less accepts nothing; there is no value that means \"no limit\" here on purpose."))
 
     def _dms_secret(self):
         """Resolve the signing secret at the point of use, never on the record."""
@@ -81,10 +79,7 @@ class DmsChannelAccount(models.Model):
             self.sudo().secret_ref)
         if not secret:
             raise UserError(
-                f'No secret stored under {self.sudo().secret_ref!r}. A channel '
-                f'account with no secret cannot verify anything, and treating '
-                f'that as "signature matched" is how an unsigned request gets '
-                f'accepted.')
+                self.env._("No secret stored under %r. A channel account with no secret cannot verify anything, and a webhook it cannot verify is a webhook anybody can send.", self.sudo().secret_ref))
         return secret
 
     def dms_verify_webhook(self, body, signature, timestamp):
@@ -97,22 +92,21 @@ class DmsChannelAccount(models.Model):
         """
         self.ensure_one()
         if self.state != 'active':
-            raise UserError(f'Channel account {self.name} is {self.state}.')
+            raise UserError(self.env._("Channel account %s is %s.", self.name, self.state))
         try:
             sent_at = int(timestamp)
         except (TypeError, ValueError):
-            raise UserError('Missing or malformed timestamp.')
+            raise UserError(self.env._("Missing or malformed timestamp."))
         drift = abs(int(time.time()) - sent_at)
         if drift > self.replay_window_seconds:
             raise UserError(
-                f'Timestamp is {drift}s off; the replay window is '
-                f'{self.replay_window_seconds}s.')
+                self.env._("Timestamp is %ss off; the replay window is %ss.", drift, self.replay_window_seconds))
         expected = self._dms_sign(body, sent_at)
         # `compare_digest`, not `==`: a plain comparison returns early on the
         # first differing byte, and the timing of that leaks the signature one
         # byte at a time.
         if not hmac.compare_digest(expected, signature or ''):
-            raise UserError('Signature does not match.')
+            raise UserError(self.env._("Signature does not match."))
         return True
 
     def _dms_sign(self, body, timestamp):
@@ -125,7 +119,7 @@ class DmsChannelAccount(models.Model):
     def action_activate(self):
         for rec in self:
             if rec.state == 'active':
-                raise UserError('Already active.')
+                raise UserError(self.env._("Already active."))
             # Reading the secret is the check: an account activated without
             # one verifies nothing, and the failure would first appear as an
             # accepted forged webhook.

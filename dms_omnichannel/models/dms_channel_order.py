@@ -71,10 +71,10 @@ class DmsChannelOrder(models.Model):
         account = self.env['dms.channel.account'].browse(
             int(channel_account_id)).exists()
         if not account:
-            raise UserError('Unknown channel account.')
+            raise UserError(self.env._("Unknown channel account."))
         if not account.can_receive_orders:
             raise UserError(
-                f'{account.name} is not configured to receive orders.')
+                self.env._("%s is not configured to receive orders.", account.name))
         checksum = self._dms_checksum(payload)
         existing = self.search([
             ('channel_account_id', '=', account.id),
@@ -116,8 +116,7 @@ class DmsChannelOrder(models.Model):
                     'errors': []}
         if not self.partner_id:
             raise UserError(
-                'This external order has no approved outlet link yet. '
-                'A matched phone number is not an approved link.')
+                self.env._("This external order has no approved outlet link yet. A matched phone number is not an approved link."))
         result = self.env['dms.order.api'].sudo().dms_order_submit(
             self.partner_id.id, lines, operation_uuid=operation_uuid)
         if result.get('order_id'):

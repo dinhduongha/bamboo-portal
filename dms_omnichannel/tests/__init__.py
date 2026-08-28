@@ -5,3 +5,4 @@ from . import test_channel_status
 from . import test_channel_inbox
 from . import test_channel_migration
 from . import test_channel_privacy
+from . import test_i18n

@@ -69,7 +69,7 @@ class DmsChannelIdentity(models.Model):
         account = self.env['dms.channel.account'].browse(
             int(channel_account_id)).exists()
         if not account:
-            raise UserError('Unknown channel account.')
+            raise UserError(self.env._("Unknown channel account."))
         existing = self.search([
             ('channel_account_id', '=', account.id),
             ('external_user_id', '=', external_user_id),
@@ -113,19 +113,18 @@ class DmsChannelIdentity(models.Model):
         """
         for rec in self:
             if rec.state not in ('requested', 'ambiguous', 'unmatched'):
-                raise UserError(f'Cannot approve a link that is {rec.state}.')
+                raise UserError(self.env._("Cannot approve a link that is %s.", rec.state))
             target = partner or rec.partner_id
             if not target:
                 raise UserError(
-                    'Name the outlet: an approval with no outlet is a link to '
-                    'nothing.')
+                    self.env._("Name the outlet: an approval with no outlet is a link to nothing."))
             rec.write({'state': 'approved', 'partner_id': target.id})
         return True
 
     def action_revoke(self, reason=None):
         reason = (reason or '').strip()
         if not reason:
-            raise UserError('A revocation needs a reason.')
+            raise UserError(self.env._("A revocation needs a reason."))
         self.write({'state': 'revoked', 'resolution_note': reason})
         return True
 
@@ -144,7 +143,7 @@ class DmsChannelIdentity(models.Model):
         """
         reason = (reason or '').strip()
         if not reason:
-            raise UserError('A deletion request needs a reason recorded.')
+            raise UserError(self.env._("A deletion request needs a reason recorded."))
         for rec in self:
             rec.write({
                 'phone_from_channel': False,

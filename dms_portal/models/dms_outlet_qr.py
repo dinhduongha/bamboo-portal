@@ -61,10 +61,10 @@ class DmsOutletQr(models.Model):
         """
         reason = (reason or '').strip()
         if not reason:
-            raise UserError('A revocation needs a reason.')
+            raise UserError(self.env._("A revocation needs a reason."))
         for rec in self:
             if rec.state == 'revoked':
-                raise UserError('Already revoked.')
+                raise UserError(self.env._("Already revoked."))
             rec.write({'state': 'revoked', 'revoked_by_id': self.env.uid,
                        'revoke_date': fields.Datetime.now(),
                        'revoke_reason': reason})
@@ -82,7 +82,7 @@ class DmsOutletQr(models.Model):
         record = self.sudo().search(
             [('code', '=', code), ('state', '=', 'active')], limit=1)
         if not record:
-            raise UserError('Unknown or revoked code.')
+            raise UserError(self.env._("Unknown or revoked code."))
         entitled = record.outlet_id.id in \
             self.env.user.dms_allowed_partner_ids()
         return {

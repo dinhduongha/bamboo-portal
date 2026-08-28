@@ -63,9 +63,7 @@ class DmsPortalEntitlement(models.Model):
         for rec in self:
             if rec.scope == 'outlet' and rec.partner_id.customer_rank <= 0:
                 raise ValidationError(
-                    f'{rec.partner_id.display_name} is not an Outlet '
-                    f'(customer_rank = 0); an outlet-scoped entitlement on it '
-                    f'grants access to something that has no orders.')
+                    self.env._("%s is not an Outlet (customer_rank = 0); an outlet-scoped entitlement on it would grant access to a record that is not one.", rec.partner_id.display_name))
 
     def action_approve(self):
         """Four eyes, and the stricter reading of it.
@@ -78,12 +76,10 @@ class DmsPortalEntitlement(models.Model):
         for rec in self:
             if rec.state != 'requested':
                 raise UserError(
-                    f'Only a requested entitlement can be approved; this one '
-                    f'is {rec.state}.')
+                    self.env._("Only a requested entitlement can be approved; this one is %s.", rec.state))
             if self.env.user in (rec.requested_by_id, rec.user_id):
                 raise UserError(
-                    'The requester and the holder cannot approve an '
-                    'entitlement. Ask a second person.')
+                    self.env._("The requester and the holder cannot approve an entitlement. Ask a second person."))
             rec.write({
                 'state': 'approved',
                 'approved_by_id': self.env.uid,
@@ -101,11 +97,10 @@ class DmsPortalEntitlement(models.Model):
         reason = (reason or '').strip()
         if not reason:
             raise UserError(
-                'A revocation needs a reason. Without one nobody reading this '
-                'row later can tell a mistake from a decision.')
+                self.env._("A revocation needs a reason. Without one nobody reading this row later can tell a mistake from a decision."))
         for rec in self:
             if rec.state == 'revoked':
-                raise UserError('This entitlement is already revoked.')
+                raise UserError(self.env._("This entitlement is already revoked."))
             rec.write({
                 'state': 'revoked',
                 'revoked_by_id': self.env.uid,

@@ -32,15 +32,14 @@ class DmsPortalApi(models.AbstractModel):
             if len(allowed) == 1:
                 return self._dms_browse_outlet(allowed[0])
             raise AccessError(
-                'Name the outlet: this account is entitled to '
-                f'{len(allowed)} of them.')
+                self.env._("Name the outlet: this account is entitled to %s of them.", len(allowed)))
         outlet_id = int(outlet_id)
         if outlet_id not in allowed:
             # Refuse rather than return nothing. An empty result would say
             # "that outlet has no products", which tells the caller the
             # outlet exists.
             raise AccessError(
-                'No approved entitlement for this outlet.')
+                self.env._("No approved entitlement for this outlet."))
         return self._dms_browse_outlet(outlet_id)
 
     @api.model

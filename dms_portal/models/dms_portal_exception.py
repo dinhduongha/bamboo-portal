@@ -83,7 +83,7 @@ class DmsPortalException(models.Model):
     def action_resolve(self, note=None):
         for rec in self:
             if rec.state != 'open':
-                raise UserError('Only an open exception can be resolved.')
+                raise UserError(self.env._("Only an open exception can be resolved."))
             rec.write({
                 'state': 'resolved',
                 'resolved_by_id': self.env.uid,
