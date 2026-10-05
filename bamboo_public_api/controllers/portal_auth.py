@@ -6,7 +6,6 @@ Bamboo client's per-account auth). Login uses Odoo's session (cookie) so the
 `withCredentials` public client + the auth='user' /portal endpoints just work.
 Signup creates a `portal` (share=True) user.
 """
-import time
 
 from odoo import http, release
 from odoo.http import request
@@ -32,15 +31,10 @@ def _issue_token(uid):
     (its ir.http override decodes `database.secret`/HS256 on public+user routes).
     Returns '' when that module isn't installed (caller falls back to session)."""
     try:
-        from odoo.addons.bamboo_token_auth import jwt_min as jwt
+        from odoo.addons.bamboo_token_auth.models import issue_token
     except ImportError:
         return ''
-    secret = request.env['ir.config_parameter'].sudo().get_param('database.secret')
-    now = int(time.time())
-    return jwt.encode(
-        {'uid': uid, 'iat': now, 'exp': now + 90 * 24 * 3600},
-        secret, algorithm='HS256',
-    )
+    return issue_token(request.env, uid)
 
 
 def _user_dict(user, token=None):

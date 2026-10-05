@@ -4,8 +4,7 @@ import os
 from odoo import http, api, release
 from odoo.http import request
 from odoo.tools import config
-import time
-from . import jwt_min as jwt
+from .models import issue_token
 
 
 def make_error(message):
@@ -236,14 +235,7 @@ class AuthTokenController(http.Controller):
 
             user = request.env['res.users'].sudo().browse(user_id)
             user._update_last_login()
-            secret_key = request.env['ir.config_parameter'].sudo(
-            ).get_param('database.secret')
-            now = int(time.time())
-            token = jwt.encode({
-                'uid': user_id,
-                'iat': now,
-                'exp': now + 90 * 24 * 3600,
-            }, secret_key, algorithm="HS256")
+            token = issue_token(request.env, user_id)
             response_data = {
                 'success': True,
                 # Top-level fields the Bamboo client reads directly.

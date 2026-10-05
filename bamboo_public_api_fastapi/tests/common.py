@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Shared bits for this module's HTTP tests."""
 
-import time
 
 from odoo.tests import HttpCase
 
@@ -26,15 +25,9 @@ class BambooFastapiCase(HttpCase):
         with. Both land in `request.env.uid` before the dispatcher runs, which is
         the only thing this module depends on, so one of them proves the seam.
         """
-        from odoo.addons.bamboo_token_auth import jwt_min as jwt
+        from odoo.addons.bamboo_token_auth.models import issue_token
 
-        secret = self.env["ir.config_parameter"].sudo().get_param("database.secret")
-        now = int(time.time())
-        return jwt.encode(
-            {"uid": user.id, "iat": now, "exp": now + 3600},
-            secret,
-            algorithm="HS256",
-        )
+        return issue_token(self.env, user.id, ttl=3600)
 
     def _auth_headers(self, user=None):
         user = user or self.env.ref("base.user_admin")

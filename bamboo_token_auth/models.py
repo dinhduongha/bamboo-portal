@@ -1,9 +1,31 @@
 # -*- coding: utf-8 -*-
 
+import hmac
+import secrets
+import time
+
 from odoo import models, fields, api, http
 from odoo.exceptions import AccessDenied
 from odoo.http import request
 from . import jwt_min as jwt
+
+
+def issue_token(env, uid, ttl=90 * 24 * 3600):
+    """Mint the HS256 bearer every Bamboo login hands out.
+
+    `stk` is Odoo's own session token for a random `jti`: an HMAC over the
+    user's id, login, password hash, active flag and database.secret. Change
+    any of them (password reset, "log out all devices", archive) and every
+    token minted before stops matching -- the same rule Odoo applies to its
+    session cookies, with no token table to keep.
+    """
+    jti = secrets.token_urlsafe(16)
+    now = int(time.time())
+    return jwt.encode({
+        'uid': uid, 'iat': now, 'exp': now + ttl, 'jti': jti,
+        'stk': env['res.users'].sudo().browse(uid)._compute_session_token(jti),
+    }, env['ir.config_parameter'].sudo().get_param('database.secret'),
+        algorithm='HS256')
 
 
 class IrHttp(models.AbstractModel):
@@ -23,11 +45,15 @@ class IrHttp(models.AbstractModel):
             try:
                 secret = request.env['ir.config_parameter'].sudo().get_param('database.secret')
                 payload = jwt.decode(token[7:], secret, algorithms=["HS256"])
-                uid = payload.get('uid')
-                # An archived (offboarded) user's token dies with the
-                # account, not when it expires.
-                if not uid or not request.env['res.users'].sudo().browse(
-                        uid).exists().active:
+                uid, jti = payload.get('uid'), payload.get('jti')
+                if not (uid and jti):
+                    return None
+                # Revoked when the user's password/login/active changed since
+                # the token was minted (see `issue_token`).
+                stk = request.env['res.users'].sudo().browse(
+                    uid)._compute_session_token(jti)
+                if not stk or not hmac.compare_digest(
+                        stk, payload.get('stk') or ''):
                     return None
                 return uid
             except Exception:

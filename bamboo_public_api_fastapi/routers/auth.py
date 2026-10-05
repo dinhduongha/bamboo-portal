@@ -12,7 +12,6 @@ on every request. `/me` still honours a session cookie if one exists — that is
 dispatcher's doing, not this router's.
 """
 
-import time
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -36,16 +35,10 @@ def _issue_token(env: Environment, uid: int) -> str:
     session, which is exactly the controller's behaviour.
     """
     try:
-        from odoo.addons.bamboo_token_auth import jwt_min as jwt
+        from odoo.addons.bamboo_token_auth.models import issue_token
     except ImportError:
         return ""
-    secret = env["ir.config_parameter"].sudo().get_param("database.secret")
-    now = int(time.time())
-    return jwt.encode(
-        {"uid": uid, "iat": now, "exp": now + 90 * 24 * 3600},
-        secret,
-        algorithm="HS256",
-    )
+    return issue_token(env, uid)
 
 
 def _verify_credentials(env: Environment, login: str, password: str) -> Optional[int]:
