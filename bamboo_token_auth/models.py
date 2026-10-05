@@ -23,7 +23,13 @@ class IrHttp(models.AbstractModel):
             try:
                 secret = request.env['ir.config_parameter'].sudo().get_param('database.secret')
                 payload = jwt.decode(token[7:], secret, algorithms=["HS256"])
-                return payload.get('uid')
+                uid = payload.get('uid')
+                # An archived (offboarded) user's token dies with the
+                # account, not when it expires.
+                if not uid or not request.env['res.users'].sudo().browse(
+                        uid).exists().active:
+                    return None
+                return uid
             except Exception:
                 return None
         return None
