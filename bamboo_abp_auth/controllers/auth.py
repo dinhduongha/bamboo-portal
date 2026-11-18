@@ -420,7 +420,11 @@ class AbpAuthController(http.Controller):
 
         id_token = token_data.get('id_token') or token_data.get('access_token')
         if not id_token:
-            _logger.error('bamboo_abp_auth: No id_token or access_token in provider response: %s', token_data)
+            # Key names and the OAuth error code only: the response may still carry
+            # a refresh_token, which must never reach the log.
+            _logger.error(
+                'bamboo_abp_auth: No id_token or access_token in provider response '
+                '(keys=%s, error=%s)', sorted(token_data), token_data.get('error'))
             return request.redirect('/web/login?oauth_error=2')
 
         # Validate JWT and provision user (does not touch session)
