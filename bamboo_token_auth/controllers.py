@@ -121,8 +121,7 @@ class AuthTokenController(http.Controller):
             data = json.loads(request.httprequest.get_data(as_text=True))
             # Frontend sends data directly, not wrapped in 'params'
             params = data if isinstance(data, dict) else {}
-            _logger.info(f'Received data: {data}')
-            _logger.info(f'Parsed params: {params}')
+            # Never log the body: it carries the password.
         except Exception as e:
             _logger.error(f'Failed to parse JSON data: {e}')
             response = Response(json.dumps(make_error('Invalid JSON data')), content_type='application/json')
@@ -175,7 +174,8 @@ class AuthTokenController(http.Controller):
             _logger.info(f'NATIVE AUTH: Authentication result - auth_info: {auth_info}, user_id: {user_id}')
             
             if user_id:
-                _logger.info(f'NATIVE AUTH: Success - authenticated user ID: {user_id} in session: {request.session.sid}')
+                # No session id here: it is a bearer credential for the session.
+                _logger.info(f'NATIVE AUTH: Success - authenticated user ID: {user_id}')
 
                 # Optional feature metadata for the full-featured client (NOT
                 # POS-only). Keyed by feature so new features add their own block
